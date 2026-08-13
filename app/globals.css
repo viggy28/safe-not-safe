@@ -1,0 +1,506 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #f7f3ea;
+  --paper-deep: #e9dfcf;
+  --ink: #181512;
+  --muted: #6a6054;
+  --line: #d8cab8;
+  --panel: #fffaf1;
+  --green: #1e7a4d;
+  --green-soft: #dff2dc;
+  --red: #bb2e2e;
+  --red-soft: #ffe0d8;
+  --amber: #a86d00;
+  --amber-soft: #fff0c9;
+  --charcoal: #24201b;
+}
+
+@theme inline {
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--paper);
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+button,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+code,
+pre,
+textarea,
+.brand-mark {
+  font-family: var(--font-geist-mono), "SFMono-Regular", Consolas, monospace;
+}
+
+.app-shell {
+  width: min(1480px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 28px 0 32px;
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.brand-mark {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border: 2px solid var(--ink);
+  background: var(--charcoal);
+  color: #fffaf1;
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  box-shadow: 4px 4px 0 var(--line);
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 6vw, 5.4rem);
+  line-height: 0.96;
+  letter-spacing: 0;
+}
+
+.verdict {
+  display: grid;
+  grid-template-columns: minmax(0, 0.5fr) minmax(180px, 1.1fr) minmax(0, 1fr);
+  align-items: center;
+  min-height: 220px;
+  margin-bottom: 18px;
+  border: 2px solid var(--ink);
+  background: var(--panel);
+  box-shadow: 8px 8px 0 var(--charcoal);
+}
+
+.verdict p,
+.verdict span {
+  margin: 0;
+  padding: 22px;
+}
+
+.verdict p {
+  align-self: stretch;
+  display: flex;
+  align-items: flex-start;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.verdict strong {
+  color: var(--ink);
+  font-size: clamp(4.6rem, 14vw, 12rem);
+  font-weight: 950;
+  line-height: 0.82;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.verdict span {
+  justify-self: end;
+  max-width: 360px;
+  color: var(--ink);
+  font-size: clamp(1.15rem, 2vw, 1.7rem);
+  font-weight: 800;
+  line-height: 1.05;
+}
+
+.verdict-safe {
+  background: linear-gradient(90deg, var(--green-soft), var(--panel) 42%);
+}
+
+.verdict-unsafe {
+  background: linear-gradient(90deg, var(--red-soft), var(--panel) 42%);
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.sql-pane,
+.result-pane {
+  min-height: 620px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.sql-pane {
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.pane-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border-bottom: 1px solid var(--line);
+  background: #fff7e7;
+}
+
+.toolbar-label {
+  display: block;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.pane-toolbar p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.toolbar-actions button,
+.choice-grid button {
+  border: 1px solid var(--ink);
+  background: #fff;
+  color: var(--ink);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.toolbar-actions button {
+  min-width: 74px;
+  min-height: 38px;
+  padding: 0 14px;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.toolbar-actions button:hover,
+.choice-grid button:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+textarea {
+  width: 100%;
+  min-height: 540px;
+  padding: 20px;
+  resize: none;
+  border: 0;
+  outline: 0;
+  background: #171512;
+  color: #f9efe0;
+  font-size: 0.96rem;
+  line-height: 1.62;
+  tab-size: 2;
+}
+
+.result-pane {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+}
+
+.finding-lead,
+.question-panel {
+  padding: 22px;
+  border-bottom: 1px solid var(--line);
+  background: #fffaf1;
+}
+
+.finding-lead h2,
+.question-panel h2 {
+  margin: 0 0 12px;
+  font-size: clamp(1.45rem, 3vw, 2.4rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.finding-lead p {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.finding-lead pre {
+  overflow-x: auto;
+  margin: 8px 0 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  background: #201d19;
+  color: #f9efe0;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.lesson {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-left: 4px solid var(--amber);
+  background: var(--amber-soft);
+  color: var(--ink) !important;
+  font-size: 0.9rem !important;
+}
+
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.choice-grid button {
+  display: grid;
+  min-height: 132px;
+  padding: 14px;
+  text-align: left;
+}
+
+.choice-grid strong {
+  align-self: start;
+  font-size: 1rem;
+  line-height: 1.15;
+}
+
+.choice-grid span {
+  align-self: end;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.findings-list {
+  min-height: 0;
+  padding: 14px;
+  overflow: auto;
+  background: #f4ecdf;
+}
+
+.list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.list-heading strong {
+  color: var(--ink);
+}
+
+.finding {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.finding div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.finding span {
+  flex: 0 0 auto;
+  min-width: 76px;
+  padding: 5px 7px;
+  border: 1px solid currentColor;
+  font-size: 0.68rem;
+  font-weight: 950;
+  text-align: center;
+}
+
+.finding h3 {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.15;
+}
+
+.finding code {
+  display: block;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.finding-safe span {
+  color: var(--green);
+  background: var(--green-soft);
+}
+
+.finding-unsafe span {
+  color: var(--red);
+  background: var(--red-soft);
+}
+
+.finding-question span {
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.empty-state {
+  margin: 0;
+  padding: 18px;
+  border: 1px dashed var(--line);
+  color: var(--muted);
+}
+
+.rules-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.rules-strip div {
+  min-height: 126px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: #fffaf1;
+}
+
+.rules-strip strong,
+.rules-strip span {
+  display: block;
+}
+
+.rules-strip strong {
+  margin-bottom: 8px;
+  font-size: 0.96rem;
+}
+
+.rules-strip span {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 980px) {
+  .app-shell {
+    width: min(100% - 24px, 760px);
+    padding-top: 18px;
+  }
+
+  .verdict {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .verdict p,
+  .verdict span {
+    padding: 16px;
+  }
+
+  .verdict strong {
+    padding: 0 16px 8px;
+    text-align: left;
+  }
+
+  .verdict span {
+    justify-self: start;
+    max-width: none;
+  }
+
+  .workspace-grid,
+  .rules-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .sql-pane,
+  .result-pane {
+    min-height: 0;
+  }
+
+  textarea {
+    min-height: 380px;
+  }
+}
+
+@media (max-width: 640px) {
+  .brand-row {
+    align-items: flex-start;
+  }
+
+  .brand-mark {
+    width: 44px;
+    height: 44px;
+    font-size: 0.78rem;
+  }
+
+  .pane-toolbar {
+    flex-direction: column;
+  }
+
+  .toolbar-actions {
+    width: 100%;
+  }
+
+  .toolbar-actions button {
+    flex: 1 1 0;
+  }
+
+  .choice-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .choice-grid button {
+    min-height: 96px;
+  }
+
+  .finding div {
+    display: grid;
+    gap: 8px;
+  }
+}
