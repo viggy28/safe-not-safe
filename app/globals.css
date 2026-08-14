@@ -636,3 +636,239 @@ textarea:focus {
     width: max-content;
   }
 }
+
+.tui-root {
+  min-height: 100vh;
+  padding: 14px;
+  background: #02060c;
+  color: #dce7f7;
+  font-family: var(--font-geist-mono), "SFMono-Regular", Consolas, monospace;
+}
+
+.tui-frame {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  width: min(100%, 1640px);
+  min-height: calc(100vh - 28px);
+  margin: 0 auto;
+  border: 1px solid #355475;
+  background: #060b12;
+}
+
+.tui-menu,
+.tui-footer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 36px;
+  padding: 0 10px;
+  background: #11253a;
+  color: #a8bdd4;
+  font-size: 0.78rem;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.tui-menu strong {
+  color: #58e6a7;
+}
+
+.tui-menu em {
+  margin-left: auto;
+  color: #8ba2b9;
+  font-style: normal;
+}
+
+.tui-verdict {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  min-height: 108px;
+  border-top: 1px solid #355475;
+  border-bottom: 1px solid #355475;
+}
+
+.tui-verdict div {
+  padding: 14px;
+  border-right: 1px solid #355475;
+  background: #08111d;
+}
+
+.tui-verdict span {
+  display: block;
+  margin-bottom: 6px;
+  color: #58e6a7;
+  font-size: 0.76rem;
+}
+
+.tui-verdict strong {
+  color: #f6f9ff;
+  font-size: clamp(2.8rem, 6vw, 5.8rem);
+  line-height: 0.9;
+}
+
+.tui-verdict p {
+  align-self: center;
+  margin: 0;
+  padding: 18px;
+  color: #f6f9ff;
+  font-size: clamp(1.3rem, 3vw, 2.9rem);
+  font-weight: 760;
+  line-height: 1;
+}
+
+.tui-board {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(380px, 1.05fr);
+  min-height: 0;
+}
+
+.tui-box {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+}
+
+.tui-input {
+  border-right: 1px solid #355475;
+}
+
+.tui-box-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 38px;
+  padding: 9px 12px;
+  border-bottom: 1px solid #355475;
+  background: #09111c;
+  color: #9bb2c9;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.tui-root textarea {
+  min-height: 0;
+  padding: 16px 18px;
+  border: 0;
+  border-radius: 0;
+  resize: none;
+  outline: 0;
+  background:
+    linear-gradient(rgb(255 255 255 / 5%) 1px, transparent 1px) 0 0 / 100% 32px,
+    #02050a;
+  color: #dce7f7;
+  font-size: 0.98rem;
+  line-height: 1.65;
+}
+
+.tui-findings {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.tui-primary {
+  padding: 14px;
+  border-bottom: 1px solid #355475;
+  background: #07101a;
+}
+
+.tui-primary strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #f6f9ff;
+  font-size: clamp(1.25rem, 2.2vw, 2rem);
+}
+
+.tui-primary p {
+  margin: 0;
+  color: #a8bdd4;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.tui-table {
+  min-height: 0;
+  padding: 10px;
+  overflow: auto;
+}
+
+.tui-table article {
+  display: grid;
+  grid-template-columns: 40px 58px minmax(180px, 0.55fr) minmax(180px, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-height: 42px;
+  border-bottom: 1px solid #162b3d;
+  color: #a8bdd4;
+  font-size: 0.82rem;
+}
+
+.tui-table article span:nth-child(2) {
+  color: #58e6a7;
+}
+
+.tui-table strong {
+  color: #f6f9ff;
+}
+
+.tui-table code {
+  color: #8ba2b9;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tui-footer {
+  border-top: 1px solid #355475;
+  background: #0b1624;
+}
+
+.tui-footer button,
+.tui-footer label {
+  flex: none;
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid #355475;
+  background: #07101a;
+  color: #dce7f7;
+  font-size: 0.78rem;
+}
+
+.tui-footer button.selected {
+  background: #15324e;
+  color: #fff;
+}
+
+.tui-footer label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tui-footer span {
+  margin-left: auto;
+  color: #58e6a7;
+}
+
+@media (max-width: 900px) {
+  .tui-verdict,
+  .tui-board {
+    grid-template-columns: 1fr;
+  }
+
+  .tui-verdict div,
+  .tui-input {
+    border-right: 0;
+    border-bottom: 1px solid #355475;
+  }
+
+  .tui-input {
+    min-height: 50vh;
+  }
+
+  .tui-table article {
+    grid-template-columns: 34px 52px minmax(0, 1fr);
+  }
+
+  .tui-table code {
+    grid-column: 3;
+  }
+}
