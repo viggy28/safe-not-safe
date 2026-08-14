@@ -68,6 +68,31 @@ textarea,
   padding: 24px 0 32px;
 }
 
+.terminal-root {
+  --bg: #050608;
+  --panel: #090d10;
+  --panel-raised: #0d1317;
+  --panel-soft: #111a1f;
+  --line: #263238;
+  --line-bright: #42525a;
+  --green: #2ee88a;
+  --green-bg: #092619;
+  --blue: #7dd3fc;
+}
+
+.terminal-root::before {
+  content: "local-only / wasm parser / browser worker / zero sql uploads";
+  display: block;
+  margin: 0 0 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #030405;
+  color: var(--subtle);
+  font-family: var(--font-geist-mono), "SFMono-Regular", Consolas, monospace;
+  font-size: 0.76rem;
+}
+
 .topbar {
   display: flex;
   align-items: center;

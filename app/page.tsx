@@ -62,15 +62,15 @@ export default function Home() {
   }
 
   return (
-    <main className="app-root">
+    <main className="app-root terminal-root">
       <section className="topbar" aria-label="Product">
         <div className="brand-lockup">
           <div className="brand-mark" aria-hidden="true">
-            SQL
+            $?
           </div>
           <div>
-            <p className="eyebrow">Local Postgres migration analysis</p>
-            <h1>Is my migration safe?</h1>
+            <p className="eyebrow">safe-not-safe</p>
+            <h1>Postgres migration checks, locally.</h1>
           </div>
         </div>
         <div className="runtime-pill">
@@ -128,8 +128,8 @@ export default function Home() {
         <section className="editor-pane" aria-label="Migration input">
           <div className="pane-header">
             <div>
-              <span className="toolbar-label">migration.sql</span>
-              <p>Paste a Postgres migration. Analysis stays in this browser.</p>
+              <span className="toolbar-label">~/prod/migration.sql</span>
+              <p>Paste SQL. No upload, no server, no database log.</p>
             </div>
             <span>{sql.length.toLocaleString()} chars</span>
           </div>
@@ -196,16 +196,16 @@ export default function Home() {
 
       <section className="architecture-strip" aria-label="Architecture">
         <div>
-          <strong>Parser boundary</strong>
-          <span>Postgres grammar via libpg_query WASM in a browser worker.</span>
+          <strong>network: none</strong>
+          <span>Your migration stays in the tab. There is no backend endpoint to receive it.</span>
         </div>
         <div>
-          <strong>Rules catalog</strong>
-          <span>Versioned TypeScript checks for locks, rewrites, validation scans, and deploy compatibility.</span>
+          <strong>parser: libpg_query.wasm</strong>
+          <span>Postgres grammar runs locally through WASM, isolated from the UI thread.</span>
         </div>
         <div>
-          <strong>No backend</strong>
-          <span>No D1, no R2, no API, no SQL logs. Future saved examples stay local-only.</span>
+          <strong>worker: browser</strong>
+          <span>Risk rules run client-side for locks, rewrites, scans, and migration-tool context.</span>
         </div>
       </section>
     </main>
