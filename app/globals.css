@@ -700,14 +700,14 @@ textarea:focus {
   min-height: 0;
 }
 
-.shell-editor,
+.shell-stdin,
 .shell-output {
   min-height: 0;
 }
 
-.shell-editor {
+.shell-stdin {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto 1fr;
   border-right: 1px solid #1d2b26;
 }
 
@@ -722,6 +722,21 @@ textarea:focus {
 }
 
 .shell-pane-head span:last-child {
+  color: #6f8378;
+}
+
+.stdin-marker {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 16px;
+  border-bottom: 1px solid #14201a;
+  background: #030503;
+  color: #a9f5c9;
+  font-size: 0.78rem;
+}
+
+.stdin-marker span:last-child {
   color: #6f8378;
 }
 
@@ -744,6 +759,14 @@ textarea:focus {
   padding: 22px;
   background: #070a0b;
   overflow: auto;
+}
+
+.stdout {
+  margin: 0 0 18px;
+  color: #d7fbe4;
+  font-size: clamp(0.88rem, 1.15vw, 1.02rem);
+  line-height: 1.55;
+  white-space: pre-wrap;
 }
 
 .shell-verdict-line {
@@ -819,6 +842,16 @@ textarea:focus {
   font-size: 0.76rem;
 }
 
+.shell-findings article > span.finding-unsafe {
+  border-color: #ff6b6b;
+  color: #ff8a8a;
+}
+
+.shell-findings article > span.finding-context {
+  border-color: #f8c555;
+  color: #f8d77b;
+}
+
 .shell-findings strong,
 .shell-findings code {
   display: block;
@@ -881,10 +914,14 @@ textarea:focus {
     grid-template-columns: 1fr;
   }
 
-  .shell-editor {
+  .shell-stdin {
     min-height: 52vh;
     border-right: 0;
     border-bottom: 1px solid #1d2b26;
+  }
+
+  .stdin-marker {
+    display: grid;
   }
 
   .shell-log {
