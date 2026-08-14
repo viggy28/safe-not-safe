@@ -62,15 +62,15 @@ export default function Home() {
   }
 
   return (
-    <main className="app-root">
+    <main className="app-root hotdog-root">
       <section className="topbar" aria-label="Product">
         <div className="brand-lockup">
           <div className="brand-mark" aria-hidden="true">
-            SQL
+            S/N
           </div>
           <div>
-            <p className="eyebrow">Local Postgres migration analysis</p>
-            <h1>Is my migration safe?</h1>
+            <p className="eyebrow">Hotdog / Not Hotdog energy. Production database consequences.</p>
+            <h1>Safe / Not Safe?</h1>
           </div>
         </div>
         <div className="runtime-pill">
@@ -129,7 +129,7 @@ export default function Home() {
           <div className="pane-header">
             <div>
               <span className="toolbar-label">migration.sql</span>
-              <p>Paste a Postgres migration. Analysis stays in this browser.</p>
+              <p>Paste a migration. Get the boring answer before production gives the exciting one.</p>
             </div>
             <span>{sql.length.toLocaleString()} chars</span>
           </div>
@@ -196,16 +196,16 @@ export default function Home() {
 
       <section className="architecture-strip" aria-label="Architecture">
         <div>
-          <strong>Parser boundary</strong>
-          <span>Postgres grammar via libpg_query WASM in a browser worker.</span>
+          <strong>No signup</strong>
+          <span>Open the page and paste SQL. The useful thing is the first thing on screen.</span>
         </div>
         <div>
-          <strong>Rules catalog</strong>
-          <span>Versioned TypeScript checks for locks, rewrites, validation scans, and deploy compatibility.</span>
+          <strong>No upload</strong>
+          <span>libpg_query WASM parses locally. Your migration text stays in the browser.</span>
         </div>
         <div>
-          <strong>No backend</strong>
-          <span>No D1, no R2, no API, no SQL logs. Future saved examples stay local-only.</span>
+          <strong>No blocking UI</strong>
+          <span>Analysis runs in a Web Worker so long migrations do not freeze the page.</span>
         </div>
       </section>
     </main>

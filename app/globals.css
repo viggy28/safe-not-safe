@@ -68,6 +68,49 @@ textarea,
   padding: 24px 0 32px;
 }
 
+.hotdog-root {
+  --bg: #0a0a0a;
+  --panel: #101010;
+  --panel-raised: #141414;
+  --panel-soft: #1b1b1b;
+  --line: #303030;
+  --line-bright: #4a4a4a;
+  --text: #f7f7f2;
+  --muted: #b5b5aa;
+  --subtle: #808076;
+  --green: #67e480;
+  --green-bg: #102516;
+  --red: #ff6d5f;
+  --red-bg: #2d1411;
+  --amber: #f7d060;
+  --amber-bg: #2b2410;
+  --blue: #8bc6ff;
+}
+
+.hotdog-root h1 {
+  font-size: clamp(2.6rem, 8vw, 7.4rem);
+  line-height: 0.9;
+}
+
+.hotdog-root .topbar,
+.hotdog-root .verdict-panel,
+.hotdog-root .editor-pane,
+.hotdog-root .result-pane,
+.hotdog-root .architecture-strip div,
+.hotdog-root .segmented-control,
+.hotdog-root .toggle-control {
+  border-radius: 4px;
+}
+
+.hotdog-root .brand-mark {
+  background: #161616;
+  color: var(--text);
+}
+
+.hotdog-root textarea {
+  background: #080808;
+}
+
 .topbar {
   display: flex;
   align-items: center;
