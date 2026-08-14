@@ -33,12 +33,14 @@ export default function Home() {
   );
   const [analysis, setAnalysis] = useState<Analysis>(() => analyzeMigrationFromText(safeSample, context));
   const [parserState, setParserState] = useState<"ready" | "analyzing" | "fallback">("fallback");
-  const decisiveFinding = analysis.decisiveFinding ?? analysis.findings[0];
+  const diffLines = sql.split("\n");
 
   useEffect(() => {
     const fallback = analyzeMigrationFromText(sql, context);
+    /* eslint-disable react-hooks/set-state-in-effect */
     setAnalysis(fallback);
     setParserState("analyzing");
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     const timeout = window.setTimeout(() => {
       analyzeMigrationInWorker(sql, context)
@@ -62,30 +64,65 @@ export default function Home() {
   }
 
   return (
-    <main className="tui-root">
-      <section className="tui-frame" aria-label="Safe Not Safe TUI">
-        <header className="tui-menu">
-          <strong>safe-not-safe</strong>
-          <span>F1 help</span>
-          <span>F2 examples</span>
-          <span>F5 analyze</span>
-          <span>ESC clear</span>
-          <em>{analysis.parser === "libpg_query" ? "libpg_query.wasm" : "fallback"} / {parserState}</em>
-        </header>
+    <main className="pr-root">
+      <header className="pr-topbar">
+        <strong>safe-not-safe</strong>
+        <span>pull request review</span>
+        <span>runs locally in browser</span>
+      </header>
 
-        <section className={`tui-verdict ${verdictClass(analysis.verdict)}`}>
-          <div>
-            <span>VERDICT</span>
-            <strong>{verdictLabel[analysis.verdict]}</strong>
+      <section className="pr-heading">
+        <div>
+          <p>viggy28 wants to merge 1 migration into prod</p>
+          <h1>Add migration safety check before deploy</h1>
+        </div>
+        <aside className={`pr-check ${verdictClass(analysis.verdict)}`}>
+          <span>safe-not-safe/check</span>
+          <strong>{verdictLabel[analysis.verdict]}</strong>
+        </aside>
+      </section>
+
+      <section className="pr-toolbar" aria-label="Migration context">
+        <button type="button" onClick={() => setSample(safeSample)}>
+          safe sample
+        </button>
+        <button type="button" onClick={() => setSample(unsafeSample)}>
+          risky sample
+        </button>
+        <button type="button" onClick={() => setSample("")}>
+          clear
+        </button>
+        {(Object.keys(tableSizeLabels) as TableSize[]).map((size) => (
+          <button
+            key={size}
+            type="button"
+            className={tableSize === size ? "selected" : undefined}
+            onClick={() => setTableSize((current) => (current === size ? undefined : size))}
+          >
+            {tableSizeLabels[size]}
+          </button>
+        ))}
+        <label>
+          <input
+            type="checkbox"
+            checked={wrapsInTransaction}
+            onChange={(event) => setWrapsInTransaction(event.target.checked)}
+          />
+          wraps transaction
+        </label>
+      </section>
+
+      <section className="pr-layout">
+        <section className="pr-file" aria-label="Migration diff">
+          <div className="pr-file-header">
+            <span>db/migrations/20260814_safe_not_safe.sql</span>
+            <span>{diffLines.length} lines changed</span>
           </div>
-          <p>{analysis.headline}</p>
-        </section>
-
-        <section className="tui-board">
-          <section className="tui-box tui-input" aria-label="Migration input">
-            <div className="tui-box-title">
-              <span>migration.sql</span>
-              <span>{sql.length.toLocaleString()} chars</span>
+          <div className="pr-diff-shell">
+            <div className="diff-lines" aria-hidden="true">
+              {diffLines.map((_, index) => (
+                <span key={index}>{index + 1}</span>
+              ))}
             </div>
             <textarea
               aria-label="Paste Postgres migration"
@@ -96,64 +133,36 @@ export default function Home() {
                 setTableSize(undefined);
               }}
             />
-          </section>
-
-          <section className="tui-box tui-findings" aria-label="Migration verdict details">
-            <div className="tui-box-title">
-              <span>findings</span>
-              <span>{analysis.findings.length} rows</span>
-            </div>
-            <div className="tui-primary">
-              <strong>{decisiveFinding?.title ?? "Ready for SQL"}</strong>
-              <p>{analysis.question?.reason ?? decisiveFinding?.why ?? "Paste SQL and the verdict appears here."}</p>
-            </div>
-            <div className="tui-table">
-              {analysis.findings.length ? (
-                analysis.findings.map((finding, index) => (
-                  <article key={finding.id}>
-                    <span>{String(index + 1).padStart(2, "0")}</span>
-                    <span>{finding.severity === "unsafe" ? "FAIL" : finding.severity === "context" ? "ASK" : "PASS"}</span>
-                    <strong>{finding.title}</strong>
-                    <code>{finding.statement}</code>
-                  </article>
-                ))
-              ) : (
-                <p>no rows; awaiting stdin</p>
-              )}
-            </div>
-          </section>
+          </div>
         </section>
 
-        <footer className="tui-footer" aria-label="Migration context">
-          <button type="button" onClick={() => setSample(safeSample)}>
-            safe
-          </button>
-          <button type="button" onClick={() => setSample(unsafeSample)}>
-            risky
-          </button>
-          <button type="button" onClick={() => setSample("")}>
-            clear
-          </button>
-          {(Object.keys(tableSizeLabels) as TableSize[]).map((size) => (
-            <button
-              key={size}
-              type="button"
-              className={tableSize === size ? "selected" : undefined}
-              onClick={() => setTableSize((current) => (current === size ? undefined : size))}
-            >
-              {size}
-            </button>
-          ))}
-          <label>
-            <input
-              type="checkbox"
-              checked={wrapsInTransaction}
-              onChange={(event) => setWrapsInTransaction(event.target.checked)}
-            />
-            migration wraps tx
-          </label>
-          <span>local wasm parse; no upload</span>
-        </footer>
+        <aside className="pr-review" aria-label="Migration verdict details">
+          <div className="pr-review-summary">
+            <span>{analysis.parser === "libpg_query" ? "libpg_query.wasm" : "fallback"} / {parserState}</span>
+            <h2>{analysis.headline}</h2>
+            <p>{analysis.question?.reason ?? analysis.summary}</p>
+          </div>
+          <div className="pr-comments">
+            {analysis.findings.length ? (
+              analysis.findings.slice(0, 5).map((finding) => (
+                <article key={finding.id} className={`pr-comment finding-${finding.severity}`}>
+                  <header>
+                    <strong>safe-not-safe bot</strong>
+                    <span>{finding.severity === "unsafe" ? "requested changes" : finding.severity === "context" ? "question" : "commented"}</span>
+                  </header>
+                  <h3>{finding.title}</h3>
+                  <p>{finding.why}</p>
+                  <code>{finding.statement}</code>
+                </article>
+              ))
+            ) : (
+              <p className="pr-empty">No comments yet. Paste a migration to start review.</p>
+            )}
+          </div>
+          <footer>
+            No SQL uploaded. No backend. Analysis happens in a browser worker.
+          </footer>
+        </aside>
       </section>
     </main>
   );
