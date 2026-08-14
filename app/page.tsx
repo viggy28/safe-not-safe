@@ -62,47 +62,42 @@ export default function Home() {
   }
 
   return (
-    <main className="app-root hotdog-root">
-      <section className="topbar" aria-label="Product">
-        <div className="brand-lockup">
-          <div className="brand-mark" aria-hidden="true">
-            S/N
-          </div>
-          <div>
-            <p className="eyebrow">Hotdog / Not Hotdog energy. Production database consequences.</p>
-            <h1>Safe / Not Safe?</h1>
-          </div>
-        </div>
-        <div className="runtime-pill">
-          <span className={`status-dot ${parserState}`} aria-hidden="true" />
-          <span>{analysis.parser === "libpg_query" ? "libpg_query parser" : "fast fallback"}</span>
-        </div>
-      </section>
+    <main className="hn-root">
+      <header className="hn-header">
+        <a href="#checker">safe-not-safe</a>
+        <span>postgres migrations</span>
+        <span>local wasm</span>
+        <span>not saas</span>
+      </header>
 
-      <section className={`verdict-panel ${verdictClass(analysis.verdict)}`}>
+      <section className="hn-intro">
+        <pre aria-hidden="true">{`   _____        __
+  / ___/ ____ _/ /__
+  \\__ \\ / __ \`/ / _ \\
+ ___/ // /_/ / /  __/
+/____/ \\__,_/_/\\___/  ?`}</pre>
         <div>
-          <p className="eyebrow">Verdict</p>
-          <strong>{verdictLabel[analysis.verdict]}</strong>
-        </div>
-        <div className="verdict-copy">
-          <h2>{analysis.headline}</h2>
-          <p>{analysis.summary}</p>
+          <h1>Is this migration safe?</h1>
+          <p>Paste SQL. Get a verdict. Nothing leaves your browser.</p>
         </div>
       </section>
 
-      <section className="control-strip" aria-label="Migration context">
-        <div className="segmented-control" aria-label="Sample migrations">
+      <section id="checker" className="hn-checker">
+        <div className={`hn-verdict ${verdictClass(analysis.verdict)}`}>
+          <span>{verdictLabel[analysis.verdict]}</span>
+          <strong>{analysis.headline}</strong>
+        </div>
+
+        <div className="hn-actions" aria-label="Migration context">
           <button type="button" onClick={() => setSample(safeSample)}>
-            Safe sample
+            safe sample
           </button>
           <button type="button" onClick={() => setSample(unsafeSample)}>
-            Risky sample
+            risky sample
           </button>
           <button type="button" onClick={() => setSample("")}>
-            Clear
+            clear
           </button>
-        </div>
-        <div className="segmented-control" aria-label="Table size">
           {(Object.keys(tableSizeLabels) as TableSize[]).map((size) => (
             <button
               key={size}
@@ -110,104 +105,48 @@ export default function Home() {
               className={tableSize === size ? "selected" : undefined}
               onClick={() => setTableSize((current) => (current === size ? undefined : size))}
             >
-              {tableSizeLabels[size]}
+              {size}
             </button>
           ))}
+          <label>
+            <input
+              type="checkbox"
+              checked={wrapsInTransaction}
+              onChange={(event) => setWrapsInTransaction(event.target.checked)}
+            />
+            wraps tx
+          </label>
         </div>
-        <label className="toggle-control">
-          <input
-            type="checkbox"
-            checked={wrapsInTransaction}
-            onChange={(event) => setWrapsInTransaction(event.target.checked)}
-          />
-          <span>Migration tool wraps transaction</span>
-        </label>
-      </section>
 
-      <section className="workspace-grid">
-        <section className="editor-pane" aria-label="Migration input">
-          <div className="pane-header">
-            <div>
-              <span className="toolbar-label">migration.sql</span>
-              <p>Paste a migration. Get the boring answer before production gives the exciting one.</p>
-            </div>
-            <span>{sql.length.toLocaleString()} chars</span>
+        <textarea
+          aria-label="Paste Postgres migration"
+          spellCheck={false}
+          value={sql}
+          onChange={(event) => {
+            setSql(event.target.value);
+            setTableSize(undefined);
+          }}
+        />
+
+        <section className="hn-output" aria-label="Migration verdict details">
+          <div>
+            <h2>{decisiveFinding?.title ?? "Ready for SQL"}</h2>
+            <p>{analysis.question?.reason ?? decisiveFinding?.why ?? "Paste SQL and the verdict appears here."}</p>
           </div>
-          <textarea
-            aria-label="Paste Postgres migration"
-            spellCheck={false}
-            value={sql}
-            onChange={(event) => {
-              setSql(event.target.value);
-              setTableSize(undefined);
-            }}
-          />
-        </section>
-
-        <section className="result-pane" aria-label="Migration verdict details">
-          {analysis.question ? (
-            <div className="question-panel">
-              <p className="eyebrow">Context required</p>
-              <h2>{analysis.question.label}</h2>
-              <p>{analysis.question.reason}</p>
-            </div>
-          ) : (
-            <div className="finding-lead">
-              <p className="eyebrow">Primary finding</p>
-              <h2>{decisiveFinding?.title ?? "Ready for SQL"}</h2>
-              <p>{decisiveFinding?.why ?? "Paste SQL and the verdict appears here."}</p>
-              {decisiveFinding?.fix ? (
-                <>
-                  <p className="eyebrow safe-rewrite-label">Safer rewrite</p>
-                  <pre>{decisiveFinding.fix}</pre>
-                </>
-              ) : null}
-            </div>
-          )}
-
-          <div className="findings-list">
-            <div className="list-heading">
-              <span>Statements checked</span>
-              <strong>{analysis.findings.length}</strong>
-            </div>
-            {analysis.findings.length ? (
-              analysis.findings.map((finding) => (
-                <article key={finding.id} className={`finding finding-${finding.severity}`}>
-                  <div className="finding-title-row">
-                    <span>
-                      {finding.severity === "unsafe"
-                        ? "NOT SAFE"
-                        : finding.severity === "context"
-                          ? "ASK"
-                          : "SAFE"}
-                    </span>
-                    <h3>{finding.title}</h3>
-                  </div>
-                  <p>{finding.why}</p>
-                  <code>{finding.statement}</code>
-                </article>
-              ))
-            ) : (
-              <p className="empty-state">Awaiting SQL.</p>
-            )}
-          </div>
+          <ol>
+            {analysis.findings.slice(0, 5).map((finding) => (
+              <li key={finding.id}>
+                <strong>{finding.severity === "unsafe" ? "not safe" : finding.severity === "context" ? "ask" : "safe"}</strong>
+                <span>{finding.title}</span>
+              </li>
+            ))}
+          </ol>
         </section>
       </section>
 
-      <section className="architecture-strip" aria-label="Architecture">
-        <div>
-          <strong>No signup</strong>
-          <span>Open the page and paste SQL. The useful thing is the first thing on screen.</span>
-        </div>
-        <div>
-          <strong>No upload</strong>
-          <span>libpg_query WASM parses locally. Your migration text stays in the browser.</span>
-        </div>
-        <div>
-          <strong>No blocking UI</strong>
-          <span>Analysis runs in a Web Worker so long migrations do not freeze the page.</span>
-        </div>
-      </section>
+      <footer className="hn-footer">
+        <span>privacy model:</span> local parser, browser worker, no backend, no sql logs.
+      </footer>
     </main>
   );
 }
