@@ -12,11 +12,13 @@
 
 # testing
 /coverage
+/.tmp
 
 # next.js
 /.next/
 /.vinext/
 /out/
+tsconfig.tsbuildinfo
 
 # misc
 .DS_Store

@@ -13,9 +13,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://is-my-migration-safe.viggy28.chatgpt.site"),
   title: "Is my migration safe?",
   description:
-    "Paste a Postgres migration and get an instant SAFE or NOT SAFE verdict in your browser.",
+    "A local-first Postgres migration safety checker for developers.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
@@ -23,14 +24,14 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Is my migration safe?",
     description:
-      "A privacy-first Postgres migration checker that gives a screenshotable SAFE or NOT SAFE verdict.",
+      "Paste SQL, parse it locally, and catch Postgres migration lock and rewrite risks before deploy.",
     images: ["/og.png"],
   },
   twitter: {
     card: "summary_large_image",
     title: "Is my migration safe?",
     description:
-      "Paste SQL, keep it local, get the migration verdict.",
+      "Developer-focused Postgres migration safety checks that run in your browser.",
     images: ["/og.png"],
   },
 };
