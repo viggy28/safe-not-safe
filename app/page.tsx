@@ -37,8 +37,10 @@ export default function Home() {
 
   useEffect(() => {
     const fallback = analyzeMigrationFromText(sql, context);
+    /* eslint-disable react-hooks/set-state-in-effect */
     setAnalysis(fallback);
     setParserState("analyzing");
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     const timeout = window.setTimeout(() => {
       analyzeMigrationInWorker(sql, context)
@@ -65,9 +67,9 @@ export default function Home() {
     <main className="hn-root">
       <header className="hn-header">
         <a href="#checker">safe-not-safe</a>
-        <span>postgres migrations</span>
+        <span>hotdog/not-hotdog for ddl</span>
         <span>local wasm</span>
-        <span>not saas</span>
+        <span>no sql uploads</span>
       </header>
 
       <section className="hn-intro">
@@ -77,8 +79,9 @@ export default function Home() {
  ___/ // /_/ / /  __/
 /____/ \\__,_/_/\\___/  ?`}</pre>
         <div>
-          <h1>Is this migration safe?</h1>
-          <p>Paste SQL. Get a verdict. Nothing leaves your browser.</p>
+          <h1>Safe / Not Safe?</h1>
+          <p>Paste a Postgres migration. Get the boring answer before prod gives you the exciting one.</p>
+          <p className="hn-subnote">Like Hotdog / Not Hotdog, but for DDL. libpg_query runs in a browser worker: {parserState}.</p>
         </div>
       </section>
 
@@ -136,7 +139,9 @@ export default function Home() {
           <ol>
             {analysis.findings.slice(0, 5).map((finding) => (
               <li key={finding.id}>
-                <strong>{finding.severity === "unsafe" ? "not safe" : finding.severity === "context" ? "ask" : "safe"}</strong>
+                <strong className={`finding-${finding.severity}`}>
+                  {finding.severity === "unsafe" ? "not safe" : finding.severity === "context" ? "ask" : "safe"}
+                </strong>
                 <span>{finding.title}</span>
               </li>
             ))}
@@ -145,7 +150,7 @@ export default function Home() {
       </section>
 
       <footer className="hn-footer">
-        <span>privacy model:</span> local parser, browser worker, no backend, no sql logs.
+        <span>privacy model:</span> local parser, browser worker, no backend, no sql logs. <a href="https://github.com/viggy28/safe-not-safe">source</a>
       </footer>
     </main>
   );

@@ -24,15 +24,15 @@ function getModule() {
   return modulePromise;
 }
 
-function stringToPtr(module: PgQueryWasmModule, value: string) {
-  const length = module.lengthBytesUTF8(value) + 1;
-  const ptr = module._malloc(length);
+function stringToPtr(wasmModule: PgQueryWasmModule, value: string) {
+  const length = wasmModule.lengthBytesUTF8(value) + 1;
+  const ptr = wasmModule._malloc(length);
 
   try {
-    module.stringToUTF8(value, ptr, length);
+    wasmModule.stringToUTF8(value, ptr, length);
     return ptr;
   } catch (error) {
-    module._free(ptr);
+    wasmModule._free(ptr);
     throw error;
   }
 }
@@ -42,33 +42,33 @@ export async function parseSqlInBrowserWithWasmAsset(query: string) {
     return { version: 170004, stmts: [] };
   }
 
-  const module = await getModule();
-  const queryPtr = stringToPtr(module, query);
+  const wasmModule = await getModule();
+  const queryPtr = stringToPtr(wasmModule, query);
   let resultPtr = 0;
 
   try {
-    resultPtr = module._wasm_parse_query_raw(queryPtr);
+    resultPtr = wasmModule._wasm_parse_query_raw(queryPtr);
     if (!resultPtr) {
       throw new Error("Failed to parse query: memory allocation failed");
     }
 
-    const parseTreePtr = module.getValue(resultPtr, "i32");
-    const errorPtr = module.getValue(resultPtr + 8, "i32");
+    const parseTreePtr = wasmModule.getValue(resultPtr, "i32");
+    const errorPtr = wasmModule.getValue(resultPtr + 8, "i32");
 
     if (errorPtr) {
-      const messagePtr = module.getValue(errorPtr, "i32");
-      throw new Error(messagePtr ? module.UTF8ToString(messagePtr) : "Unknown parser error");
+      const messagePtr = wasmModule.getValue(errorPtr, "i32");
+      throw new Error(messagePtr ? wasmModule.UTF8ToString(messagePtr) : "Unknown parser error");
     }
 
     if (!parseTreePtr) {
       throw new Error("No parse tree generated");
     }
 
-    return JSON.parse(module.UTF8ToString(parseTreePtr));
+    return JSON.parse(wasmModule.UTF8ToString(parseTreePtr));
   } finally {
-    module._free(queryPtr);
+    wasmModule._free(queryPtr);
     if (resultPtr) {
-      module._wasm_free_parse_result(resultPtr);
+      wasmModule._wasm_free_parse_result(resultPtr);
     }
   }
 }

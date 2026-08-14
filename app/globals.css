@@ -718,6 +718,12 @@ textarea:focus {
   font-size: 0.96rem;
 }
 
+.hn-intro .hn-subnote {
+  margin-top: 8px;
+  color: #82807a;
+  font-size: 0.78rem;
+}
+
 .hn-checker {
   display: grid;
   gap: 10px;
@@ -827,6 +833,14 @@ textarea:focus {
   color: #008000;
 }
 
+.hn-output li strong.finding-unsafe {
+  color: #b00000;
+}
+
+.hn-output li strong.finding-context {
+  color: #8a5a00;
+}
+
 .hn-footer {
   margin-top: 14px;
   color: #5f5b52;
@@ -836,6 +850,10 @@ textarea:focus {
 .hn-footer span {
   color: #16120f;
   font-weight: 700;
+}
+
+.hn-footer a {
+  color: #000;
 }
 
 @media (max-width: 760px) {
