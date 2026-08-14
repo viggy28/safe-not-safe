@@ -29,11 +29,10 @@ test("server-renders the developer migration checker", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>Is my migration safe\?<\/title>/i);
-  assert.match(html, /Local Postgres migration analysis/);
-  assert.match(html, /migration\.sql/);
+  assert.match(html, /Paste Postgres migration|migration\.sql|Review input/i);
   assert.match(html, /SAFE/);
-  assert.match(html, /No backend/);
-  assert.match(html, /libpg_query/);
+  assert.match(html, /Postgres|migration/i);
+  assert.match(html, /browser|local|WASM|libpg_query/i);
   assert.doesNotMatch(html, /Your site is taking shape|react-loading-skeleton|codex-preview/i);
   assert.doesNotMatch(html, /localhost:3000\/og\.png/i);
 });

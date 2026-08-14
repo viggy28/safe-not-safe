@@ -68,6 +68,38 @@ textarea,
   padding: 24px 0 32px;
 }
 
+.console-root {
+  --bg: #06080c;
+  --panel: #0b1016;
+  --panel-raised: #0f1720;
+  --panel-soft: #121d27;
+  --line: #223140;
+  --line-bright: #36546a;
+  --green: #3ecf8e;
+  --green-bg: #09251a;
+  --blue: #56b6c2;
+}
+
+.console-root .topbar {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.console-root h1 {
+  max-width: 880px;
+  font-size: clamp(1.8rem, 3.8vw, 3.9rem);
+}
+
+.console-root .verdict-panel {
+  grid-template-columns: minmax(220px, 0.62fr) minmax(0, 1.38fr);
+}
+
+.console-root .architecture-strip div {
+  min-height: 96px;
+}
+
 .topbar {
   display: flex;
   align-items: center;

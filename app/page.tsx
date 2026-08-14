@@ -62,15 +62,15 @@ export default function Home() {
   }
 
   return (
-    <main className="app-root">
+    <main className="app-root console-root">
       <section className="topbar" aria-label="Product">
         <div className="brand-lockup">
           <div className="brand-mark" aria-hidden="true">
-            SQL
+            DB
           </div>
           <div>
-            <p className="eyebrow">Local Postgres migration analysis</p>
-            <h1>Is my migration safe?</h1>
+            <p className="eyebrow">Safe / Not Safe console</p>
+            <h1>A local-first migration review workspace.</h1>
           </div>
         </div>
         <div className="runtime-pill">
@@ -128,8 +128,8 @@ export default function Home() {
         <section className="editor-pane" aria-label="Migration input">
           <div className="pane-header">
             <div>
-              <span className="toolbar-label">migration.sql</span>
-              <p>Paste a Postgres migration. Analysis stays in this browser.</p>
+              <span className="toolbar-label">Review input</span>
+              <p>Paste a Postgres migration and inspect lock, rewrite, and validation risks.</p>
             </div>
             <span>{sql.length.toLocaleString()} chars</span>
           </div>
@@ -196,16 +196,16 @@ export default function Home() {
 
       <section className="architecture-strip" aria-label="Architecture">
         <div>
-          <strong>Parser boundary</strong>
-          <span>Postgres grammar via libpg_query WASM in a browser worker.</span>
+          <strong>1. Paste migration</strong>
+          <span>Use real Postgres SQL from a migration file, deploy diff, or generated script.</span>
         </div>
         <div>
-          <strong>Rules catalog</strong>
-          <span>Versioned TypeScript checks for locks, rewrites, validation scans, and deploy compatibility.</span>
+          <strong>2. Parse locally</strong>
+          <span>libpg_query runs as WASM in the browser. SQL does not leave the page.</span>
         </div>
         <div>
-          <strong>No backend</strong>
-          <span>No D1, no R2, no API, no SQL logs. Future saved examples stay local-only.</span>
+          <strong>3. Review findings</strong>
+          <span>Rules run in a Web Worker and return a verdict with safer migration notes.</span>
         </div>
       </section>
     </main>
