@@ -19,6 +19,15 @@ renames. Safe / Not Safe catches the common traps while keeping raw SQL local.
 - TypeScript rules catalog for migration risk checks
 - No backend, no database, no SQL logging
 
+## Deployment
+
+Vinext is the app framework and build/runtime layer. For this no-backend app,
+the simplest deployment path is OpenAI Sites: keep `.openai/hosting.json` local
+for the Sites project you deploy to, then run the normal build and publish flow.
+
+The public GitHub repo intentionally does not need ChatGPT auth helpers, D1,
+R2, Drizzle, or a committed `.openai/` directory.
+
 ## Local Development
 
 ```bash
