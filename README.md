@@ -22,12 +22,35 @@ renames. Safe / Not Safe catches the common traps while keeping raw SQL local.
 
 ## Deployment
 
-Vinext is the app framework and build/runtime layer. For this no-backend app,
-the simplest deployment path is OpenAI Sites: keep `.openai/hosting.json` local
-for the Sites project you deploy to, then run the normal build and publish flow.
+The production target is Cloudflare Workers. Pull requests run typechecking,
+tests, and a production build; pushes to `main` run the same checks and then
+deploy the existing `safe-not-safe-worker` Worker with
+`.github/workflows/ci-deploy.yml`.
 
-The public GitHub repo intentionally does not need ChatGPT auth helpers, D1,
-R2, Drizzle, or a committed `.openai/` directory.
+Before the first deployment, add these GitHub Actions repository secrets:
+
+- `CLOUDFLARE_ACCOUNT_ID`
+- `CLOUDFLARE_API_TOKEN` created with the **Edit Cloudflare Workers** template
+
+The checked-in `wrangler.jsonc` configures the Worker entry point, static asset
+binding, and Cloudflare Images binding. It intentionally has no D1, R2, KV,
+auth, or application-secret bindings. Vite emits the browser parser worker and
+`libpg_query` WASM into `dist/client`, which Wrangler uploads with the app.
+
+To deploy manually with Wrangler credentials configured locally:
+
+```bash
+npm ci
+npm run typecheck
+npm test
+npm run deploy
+```
+
+Wrangler reports the generated `*.workers.dev` URL after a successful deploy.
+If the repository is already connected to Cloudflare Workers Builds, disable
+that build trigger after this GitHub Actions workflow is enabled so two
+pipelines do not race to deploy the same Worker. A custom domain can be attached
+later in Cloudflare.
 
 ## Local Development
 
