@@ -2,12 +2,13 @@ import type { Analysis, Finding, ParsedMigration } from "@/src/analysis/types";
 
 function noSqlAnalysis(migration: ParsedMigration): Analysis {
   return {
-    verdict: "SAFE",
-    headline: "Paste a migration to get a verdict.",
-    summary: "The analyzer runs locally in your browser.",
+    verdict: "NO_INPUT",
+    headline: "Waiting on SQL.",
+    summary: "Paste a migration, or load one of the samples.",
     findings: [],
     diagnostics: migration.diagnostics,
     parser: migration.parser,
+    statements: migration.statements,
   };
 }
 
@@ -26,6 +27,7 @@ export function buildVerdict(migration: ParsedMigration, findings: Finding[]): A
       decisiveFinding: unsafe,
       diagnostics: migration.diagnostics,
       parser: migration.parser,
+      statements: migration.statements,
     };
   }
 
@@ -40,6 +42,7 @@ export function buildVerdict(migration: ParsedMigration, findings: Finding[]): A
       question: context.question,
       diagnostics: migration.diagnostics,
       parser: migration.parser,
+      statements: migration.statements,
     };
   }
 
@@ -53,6 +56,7 @@ export function buildVerdict(migration: ParsedMigration, findings: Finding[]): A
       decisiveFinding: unsupported,
       diagnostics: migration.diagnostics,
       parser: migration.parser,
+      statements: migration.statements,
     };
   }
 
@@ -64,5 +68,6 @@ export function buildVerdict(migration: ParsedMigration, findings: Finding[]): A
     decisiveFinding: findings[0],
     diagnostics: migration.diagnostics,
     parser: migration.parser,
+    statements: migration.statements,
   };
 }

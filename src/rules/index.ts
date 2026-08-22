@@ -28,12 +28,14 @@ function finding(
     severity,
     why,
     fix,
+    line: statement.line,
   };
 }
 
 export const rules: Rule[] = [
   {
     id: "transaction-boundary",
+    checks: "BEGIN / COMMIT changes what may run concurrently",
     evaluate(statement) {
       if (statement.kind !== "transaction") {
         return null;
@@ -50,6 +52,7 @@ export const rules: Rule[] = [
   },
   {
     id: "create-index-without-concurrently",
+    checks: "CREATE INDEX without CONCURRENTLY blocks writes",
     evaluate(statement) {
       if (statement.kind !== "create_index" || statement.indexConcurrent) {
         return null;
@@ -67,6 +70,7 @@ export const rules: Rule[] = [
   },
   {
     id: "create-index-concurrently",
+    checks: "CREATE INDEX CONCURRENTLY, rejected inside a transaction",
     evaluate(statement, migration, context) {
       if (statement.kind !== "create_index" || !statement.indexConcurrent) {
         return null;
@@ -94,6 +98,7 @@ export const rules: Rule[] = [
   },
   {
     id: "add-column-expression-default",
+    checks: "ADD COLUMN with a non-literal default rewrites rows",
     evaluate(statement) {
       if (statement.kind !== "alter_table" || !hasAction(statement, "add_column") || !statement.hasExpressionDefault) {
         return null;
@@ -111,6 +116,7 @@ export const rules: Rule[] = [
   },
   {
     id: "add-column-constant-default",
+    checks: "ADD COLUMN with a literal default is metadata-only",
     evaluate(statement) {
       if (
         statement.kind !== "alter_table" ||
@@ -132,6 +138,7 @@ export const rules: Rule[] = [
   },
   {
     id: "alter-column-type",
+    checks: "ALTER COLUMN TYPE, gated on table size",
     evaluate(statement, _migration, context) {
       if (statement.kind !== "alter_table" || !hasAction(statement, "alter_column_type")) {
         return null;
@@ -177,6 +184,7 @@ export const rules: Rule[] = [
   },
   {
     id: "foreign-key-validates-immediately",
+    checks: "ADD FOREIGN KEY without NOT VALID scans the table",
     evaluate(statement, _migration, context) {
       if (
         statement.kind !== "alter_table" ||
@@ -226,6 +234,7 @@ export const rules: Rule[] = [
   },
   {
     id: "validate-constraint",
+    checks: "VALIDATE CONSTRAINT lock strength",
     evaluate(statement) {
       if (statement.kind !== "alter_table" || !hasAction(statement, "validate_constraint")) {
         return null;
@@ -242,6 +251,7 @@ export const rules: Rule[] = [
   },
   {
     id: "set-not-null",
+    checks: "SET NOT NULL full-table scan",
     evaluate(statement) {
       if (statement.kind !== "alter_table" || !hasAction(statement, "set_not_null")) {
         return null;
@@ -259,6 +269,7 @@ export const rules: Rule[] = [
   },
   {
     id: "drop-column",
+    checks: "DROP COLUMN against rolling deploys",
     evaluate(statement) {
       if (statement.kind !== "alter_table" || !hasAction(statement, "drop_column")) {
         return null;
@@ -276,6 +287,7 @@ export const rules: Rule[] = [
   },
   {
     id: "rename",
+    checks: "RENAME TABLE / COLUMN / CONSTRAINT",
     evaluate(statement) {
       if (statement.kind !== "rename") {
         return null;
@@ -293,6 +305,7 @@ export const rules: Rule[] = [
   },
   {
     id: "unique-constraint",
+    checks: "ADD CONSTRAINT UNIQUE without USING INDEX",
     evaluate(statement) {
       if (statement.kind !== "alter_table" || statement.constraintType !== "unique") {
         return null;
@@ -310,6 +323,7 @@ export const rules: Rule[] = [
   },
   {
     id: "truncate",
+    checks: "TRUNCATE lock strength",
     evaluate(statement) {
       if (statement.kind !== "truncate") {
         return null;
@@ -327,6 +341,7 @@ export const rules: Rule[] = [
   },
   {
     id: "rewrite-command",
+    checks: "VACUUM FULL and CLUSTER rewrite the table",
     evaluate(statement) {
       if (statement.kind !== "rewrite_command") {
         return null;

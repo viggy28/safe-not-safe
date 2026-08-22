@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readdir, readFile } from "node:fs/promises";
 import test from "node:test";
 
 async function render() {
@@ -29,11 +30,30 @@ test("server-renders the developer migration checker", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>Is my migration safe\?<\/title>/i);
-  assert.match(html, /Local Postgres migration analysis/);
+  assert.match(html, /Your SQL never leaves the browser/);
+  assert.match(html, /No API route/);
   assert.match(html, /migration\.sql/);
-  assert.match(html, /SAFE/);
-  assert.match(html, /No backend/);
+  assert.match(html, /CHECKING/);
+  assert.match(html, /Loading PostgreSQL parser/);
   assert.match(html, /libpg_query/);
+  assert.doesNotMatch(html, /text fallback|fast fallback/i);
   assert.doesNotMatch(html, /Your site is taking shape|react-loading-skeleton|codex-preview/i);
   assert.doesNotMatch(html, /localhost:3000\/og\.png/i);
+});
+
+test("client bundle emits a browser worker and WASM without fallback code", async () => {
+  const staticUrl = new URL("../dist/client/_next/static/", import.meta.url);
+  const assets = await readdir(staticUrl);
+  assert.ok(assets.some((name) => /^parserWorker-.*\.js$/.test(name)));
+  assert.ok(assets.some((name) => /^libpg-query-.*\.wasm$/.test(name)));
+
+  const chunksUrl = new URL("chunks/", staticUrl);
+  const chunks = (await readdir(chunksUrl)).filter((name) => name.endsWith(".js"));
+  const source = (
+    await Promise.all(chunks.map((name) => readFile(new URL(name, chunksUrl), "utf8")))
+  ).join("\n");
+
+  assert.match(source, /parserWorker-[\w-]+\.js/);
+  assert.doesNotMatch(source, /file:\/\/\/ROOT/);
+  assert.doesNotMatch(source, /Using lightweight text classification|text fallback|fast fallback/i);
 });

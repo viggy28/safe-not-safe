@@ -1,5 +1,5 @@
 import type { ParsedMigration, ParsedStatement } from "@/src/analysis/types";
-import { compactSql, indexName as fallbackIndexName, tableFromAlter } from "@/src/parser/fallbackParser";
+import { compactSql, indexName as inferredIndexName, tableFromAlter } from "@/src/parser/sqlText";
 
 type AnyRecord = Record<string, unknown>;
 
@@ -76,6 +76,7 @@ function normalizeStatement(sql: string, stmtEnvelope: AnyRecord, index: number)
     astType,
     ast: stmtEnvelope.stmt,
     alterActions: [],
+    line: sql.slice(0, location).split("\n").length,
   };
 
   const indexStmt = unwrap<AnyRecord>(stmt, "IndexStmt");
@@ -84,7 +85,7 @@ function normalizeStatement(sql: string, stmtEnvelope: AnyRecord, index: number)
       ...base,
       kind: "create_index",
       tableName: relationName(indexStmt.relation),
-      indexName: typeof indexStmt.idxname === "string" ? indexStmt.idxname : fallbackIndexName(compactSqlText),
+      indexName: typeof indexStmt.idxname === "string" ? indexStmt.idxname : inferredIndexName(compactSqlText),
       indexConcurrent: Boolean(indexStmt.concurrent),
       indexUnique: Boolean(indexStmt.unique),
     };

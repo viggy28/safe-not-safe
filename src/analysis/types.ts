@@ -1,4 +1,11 @@
-export type Verdict = "SAFE" | "NOT_SAFE" | "NEEDS_CONTEXT" | "UNSUPPORTED";
+export type Verdict =
+  | "SAFE"
+  | "NOT_SAFE"
+  | "NEEDS_CONTEXT"
+  | "UNSUPPORTED"
+  | "NO_INPUT"
+  | "CHECKING"
+  | "PARSER_ERROR";
 
 export type FindingSeverity = "safe" | "unsafe" | "context" | "unsupported";
 
@@ -25,11 +32,13 @@ export type Finding = {
   why: string;
   fix?: string;
   question?: ContextQuestion;
+  /** 1-based line number in the source SQL where this statement begins. */
+  line?: number;
 };
 
 export type ParserDiagnostic = {
   message: string;
-  source: "libpg_query" | "fallback";
+  source: "libpg_query";
 };
 
 export type Analysis = {
@@ -40,7 +49,8 @@ export type Analysis = {
   decisiveFinding?: Finding;
   question?: ContextQuestion;
   diagnostics: ParserDiagnostic[];
-  parser: "libpg_query" | "fallback";
+  parser: "libpg_query";
+  statements: ParsedStatement[];
 };
 
 export type StatementKind =
@@ -77,17 +87,21 @@ export type ParsedStatement = {
   hasExpressionDefault?: boolean;
   constraintType?: "foreign_key" | "unique" | "other";
   constraintValidatesImmediately?: boolean;
+  /** 1-based line number in the source SQL where this statement begins. */
+  line?: number;
 };
 
 export type ParsedMigration = {
   sql: string;
   statements: ParsedStatement[];
-  parser: "libpg_query" | "fallback";
+  parser: "libpg_query";
   diagnostics: ParserDiagnostic[];
 };
 
 export type Rule = {
   id: string;
+  /** One-line description shown in the RULE ENGINE catalog. */
+  checks: string;
   evaluate: (
     statement: ParsedStatement,
     migration: ParsedMigration,

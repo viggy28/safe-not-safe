@@ -14,25 +14,42 @@ type PgQueryWasmModule = {
 
 let modulePromise: Promise<PgQueryWasmModule> | undefined;
 
-function getModule() {
-  modulePromise ??= PgQueryModule({
+async function loadModule() {
+  const response = await fetch(wasmUrl);
+  if (!response.ok) {
+    throw new Error(`Failed to load PostgreSQL parser WASM (${response.status})`);
+  }
+
+  // Passing the already-fetched binary prevents Emscripten from issuing a
+  // second request when a host serves .wasm with a generic MIME type.
+  const wasmBinary = await response.arrayBuffer();
+  return PgQueryModule({
+    wasmBinary,
     locateFile(path: string) {
       return path.endsWith(".wasm") ? wasmUrl : path;
     },
   }) as Promise<PgQueryWasmModule>;
+}
 
+function getModule() {
+  modulePromise ??= loadModule();
   return modulePromise;
 }
 
-function stringToPtr(module: PgQueryWasmModule, value: string) {
-  const length = module.lengthBytesUTF8(value) + 1;
-  const ptr = module._malloc(length);
+/** Start downloading and compiling the WASM module before the first query. */
+export async function initializeBrowserLibpgQuery(): Promise<void> {
+  await getModule();
+}
+
+function stringToPtr(wasm: PgQueryWasmModule, value: string) {
+  const length = wasm.lengthBytesUTF8(value) + 1;
+  const ptr = wasm._malloc(length);
 
   try {
-    module.stringToUTF8(value, ptr, length);
+    wasm.stringToUTF8(value, ptr, length);
     return ptr;
   } catch (error) {
-    module._free(ptr);
+    wasm._free(ptr);
     throw error;
   }
 }
@@ -42,33 +59,33 @@ export async function parseSqlInBrowserWithWasmAsset(query: string) {
     return { version: 170004, stmts: [] };
   }
 
-  const module = await getModule();
-  const queryPtr = stringToPtr(module, query);
+  const wasm = await getModule();
+  const queryPtr = stringToPtr(wasm, query);
   let resultPtr = 0;
 
   try {
-    resultPtr = module._wasm_parse_query_raw(queryPtr);
+    resultPtr = wasm._wasm_parse_query_raw(queryPtr);
     if (!resultPtr) {
       throw new Error("Failed to parse query: memory allocation failed");
     }
 
-    const parseTreePtr = module.getValue(resultPtr, "i32");
-    const errorPtr = module.getValue(resultPtr + 8, "i32");
+    const parseTreePtr = wasm.getValue(resultPtr, "i32");
+    const errorPtr = wasm.getValue(resultPtr + 8, "i32");
 
     if (errorPtr) {
-      const messagePtr = module.getValue(errorPtr, "i32");
-      throw new Error(messagePtr ? module.UTF8ToString(messagePtr) : "Unknown parser error");
+      const messagePtr = wasm.getValue(errorPtr, "i32");
+      throw new Error(messagePtr ? wasm.UTF8ToString(messagePtr) : "Unknown parser error");
     }
 
     if (!parseTreePtr) {
       throw new Error("No parse tree generated");
     }
 
-    return JSON.parse(module.UTF8ToString(parseTreePtr));
+    return JSON.parse(wasm.UTF8ToString(parseTreePtr));
   } finally {
-    module._free(queryPtr);
+    wasm._free(queryPtr);
     if (resultPtr) {
-      module._wasm_free_parse_result(resultPtr);
+      wasm._wasm_free_parse_result(resultPtr);
     }
   }
 }

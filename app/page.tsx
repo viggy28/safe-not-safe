@@ -1,213 +1,351 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { Analysis, MigrationContext, TableSize, Verdict } from "@/src/analysis/types";
-import { analyzeMigrationFromText } from "@/src/analysis/analyzeMigration";
+import type { Analysis, MigrationContext, TableSize } from "@/src/analysis/types";
+import {
+  analyzeMigrationInWorker,
+  initializeParserWorker,
+  restartParserWorker,
+  type ParserState,
+} from "@/src/parser/parserClient";
 import { safeSample, unsafeSample } from "@/src/examples/examples";
-import { analyzeMigrationInWorker } from "@/src/parser/parserClient";
+import { verdictMeta } from "@/src/ui/verdictMeta";
+import type { Buffer, Cursor, PanelTab } from "@/src/ui/types";
+import { TitleBar } from "@/src/components/editor/TitleBar";
+import { ActivityBar } from "@/src/components/editor/ActivityBar";
+import { Sidebar } from "@/src/components/editor/Sidebar";
+import { TabStrip } from "@/src/components/editor/TabStrip";
+import { Breadcrumb } from "@/src/components/editor/Breadcrumb";
+import { EditorPane } from "@/src/components/editor/EditorPane";
+import { VerdictBanner } from "@/src/components/editor/VerdictBanner";
+import { TerminalPanel } from "@/src/components/editor/TerminalPanel";
+import { StatusBar } from "@/src/components/editor/StatusBar";
 
-const verdictLabel: Record<Verdict, string> = {
-  SAFE: "SAFE",
-  NOT_SAFE: "NOT SAFE",
-  NEEDS_CONTEXT: "NEEDS CONTEXT",
-  UNSUPPORTED: "PARSE ERROR",
-};
+type WorkerStatus = "initializing" | "ready" | "error";
 
-const tableSizeLabels: Record<TableSize, string> = {
-  small: "Under 50k",
-  medium: "50k to 5M",
-  large: "Over 5M",
-};
+const INITIAL_BUFFER: Buffer = { id: 1, name: "migration.sql", sql: safeSample };
 
-function verdictClass(verdict: Verdict) {
-  return `verdict-${verdict.toLowerCase().replace("_", "-")}`;
+const SAMPLES: Array<{ label: string; name: string; sql: string }> = [
+  { label: "risky.sql", name: "risky.sql", sql: unsafeSample },
+  { label: "safe.sql", name: "safe.sql", sql: safeSample },
+  { label: "empty buffer", name: "untitled.sql", sql: "" },
+];
+
+function inputKey(sql: string, context: MigrationContext) {
+  return `${sql}\u0000${context.tableSize ?? ""}\u0000${context.wrapsInTransaction ? "1" : "0"}`;
+}
+
+function pendingAnalysis(sql: string, parserState: ParserState, parserError?: string): Analysis {
+  if (!sql.trim()) {
+    return {
+      verdict: "NO_INPUT",
+      headline: "Waiting on SQL.",
+      summary: "Paste a migration, or load one of the samples.",
+      findings: [],
+      diagnostics: [],
+      parser: "libpg_query",
+      statements: [],
+    };
+  }
+
+  if (parserState === "error") {
+    return {
+      verdict: "PARSER_ERROR",
+      headline: "PostgreSQL parser unavailable.",
+      summary: parserError ?? "The WASM parser could not be initialized. Retry before trusting a verdict.",
+      findings: [],
+      diagnostics: parserError ? [{ source: "libpg_query", message: parserError }] : [],
+      parser: "libpg_query",
+      statements: [],
+    };
+  }
+
+  return {
+    verdict: "CHECKING",
+    headline: parserState === "initializing" ? "Loading PostgreSQL parser." : "Checking this migration.",
+    summary:
+      parserState === "initializing"
+        ? "Downloading and compiling libpg_query WASM in a browser worker."
+        : "The authoritative PostgreSQL parser is analyzing the latest SQL.",
+    findings: [],
+    diagnostics: [],
+    parser: "libpg_query",
+    statements: [],
+  };
 }
 
 export default function Home() {
-  const [sql, setSql] = useState(safeSample);
+  const [buffers, setBuffers] = useState<Buffer[]>([INITIAL_BUFFER]);
+  const [activeId, setActiveId] = useState(1);
+  const [nextId, setNextId] = useState(2);
   const [tableSize, setTableSize] = useState<TableSize | undefined>();
   const [wrapsInTransaction, setWrapsInTransaction] = useState(false);
+  const [panelTab, setPanelTab] = useState<PanelTab>("terminal");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [cursor, setCursor] = useState<Cursor>({ line: 1, col: 1 });
+  const [recheckTick, setRecheckTick] = useState(0);
+  const [workerStatus, setWorkerStatus] = useState<WorkerStatus>("initializing");
+  const [parserError, setParserError] = useState<string>();
+  const [analysisCache, setAnalysisCache] = useState<
+    Record<number, { key: string; analysis: Analysis }>
+  >({});
+  const [statementCounts, setStatementCounts] = useState<Record<number, number>>({});
+
+  const activeBuffer = buffers.find((buffer) => buffer.id === activeId) ?? buffers[0];
   const context: MigrationContext = useMemo(
     () => ({ tableSize, wrapsInTransaction }),
     [tableSize, wrapsInTransaction],
   );
-  const [analysis, setAnalysis] = useState<Analysis>(() => analyzeMigrationFromText(safeSample, context));
-  const [parserState, setParserState] = useState<"ready" | "analyzing" | "fallback">("fallback");
-  const decisiveFinding = analysis.decisiveFinding ?? analysis.findings[0];
+  const currentKey = inputKey(activeBuffer.sql, context);
+  const cachedEntry = analysisCache[activeId];
+  const cachedAnalysis = cachedEntry?.key === currentKey ? cachedEntry.analysis : undefined;
+  const parserState: ParserState =
+    workerStatus === "error"
+      ? "error"
+      : workerStatus === "initializing"
+        ? "initializing"
+        : cachedAnalysis
+          ? "ready"
+          : "analyzing";
+  const analysis =
+    parserState === "error"
+      ? pendingAnalysis(activeBuffer.sql, parserState, parserError)
+      : cachedAnalysis ?? pendingAnalysis(activeBuffer.sql, parserState, parserError);
+  const verdict = verdictMeta[analysis.verdict];
+  const statementCount = analysis.statements.length;
+  const problemCount = analysis.findings.filter((finding) => finding.severity !== "safe").length;
 
   useEffect(() => {
-    const fallback = analyzeMigrationFromText(sql, context);
-    setAnalysis(fallback);
-    setParserState("analyzing");
+    let cancelled = false;
 
+    initializeParserWorker().then(
+      () => {
+        if (!cancelled) {
+          setWorkerStatus("ready");
+          setParserError(undefined);
+        }
+      },
+      (error) => {
+        if (!cancelled) {
+          setWorkerStatus("error");
+          setParserError(error instanceof Error ? error.message : "PostgreSQL parser initialization failed");
+        }
+      },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (workerStatus !== "ready") {
+      return;
+    }
+
+    let cancelled = false;
+    const key = inputKey(activeBuffer.sql, context);
+    const bufferId = activeBuffer.id;
     const timeout = window.setTimeout(() => {
-      analyzeMigrationInWorker(sql, context)
-        .then((result) => {
-          setAnalysis(result);
-          setParserState("ready");
-        })
-        .catch(() => {
-          setAnalysis(fallback);
-          setParserState("fallback");
-        });
+      analyzeMigrationInWorker(activeBuffer.sql, context).then(
+        (result) => {
+          if (!cancelled) {
+            setAnalysisCache((current) => ({
+              ...current,
+              [bufferId]: { key, analysis: result },
+            }));
+            setStatementCounts((current) => ({ ...current, [bufferId]: result.statements.length }));
+          }
+        },
+        (error) => {
+          if (!cancelled) {
+            setWorkerStatus("error");
+            setParserError(error instanceof Error ? error.message : "PostgreSQL parser worker failed");
+          }
+        },
+      );
     }, 180);
 
-    return () => window.clearTimeout(timeout);
-  }, [sql, context]);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+    };
+  }, [activeBuffer.id, activeBuffer.sql, context, recheckTick, workerStatus]);
 
-  function setSample(nextSql: string) {
-    setSql(nextSql);
+  function retryParser() {
+    setWorkerStatus("initializing");
+    setParserError(undefined);
+    restartParserWorker().then(
+      () => setWorkerStatus("ready"),
+      (error) => {
+        setWorkerStatus("error");
+        setParserError(error instanceof Error ? error.message : "PostgreSQL parser initialization failed");
+      },
+    );
+  }
+
+  function recheck() {
+    if (workerStatus === "error") {
+      retryParser();
+      return;
+    }
+
+    setAnalysisCache((current) => {
+      const next = { ...current };
+      delete next[activeId];
+      return next;
+    });
+    setRecheckTick((current) => current + 1);
+  }
+
+  function updateActiveSql(sql: string) {
+    setBuffers((current) => current.map((buffer) => (buffer.id === activeId ? { ...buffer, sql } : buffer)));
+    setStatementCounts((current) => {
+      const next = { ...current };
+      delete next[activeId];
+      return next;
+    });
+  }
+
+  function selectBuffer(id: number) {
+    setActiveId(id);
+  }
+
+  function closeBuffer(id: number) {
+    setBuffers((current) => {
+      if (current.length < 2) {
+        return current;
+      }
+
+      const remaining = current.filter((buffer) => buffer.id !== id);
+      if (id === activeId) {
+        setActiveId(remaining[remaining.length - 1].id);
+      }
+      return remaining;
+    });
+    setStatementCounts((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+    setAnalysisCache((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+  }
+
+  function openBuffer(name: string, sql: string) {
+    setBuffers((current) => [...current, { id: nextId, name, sql }]);
+    setActiveId(nextId);
+    setNextId((current) => current + 1);
     setTableSize(undefined);
     setWrapsInTransaction(false);
   }
 
+  function handleTableSize(size: TableSize) {
+    setTableSize((current) => (current === size ? undefined : size));
+  }
+
+  function handleCursorChange(next: Cursor) {
+    setCursor((current) => (current.line === next.line && current.col === next.col ? current : next));
+  }
+
+  const sidebarBuffers = buffers.map((buffer) => ({
+    id: buffer.id,
+    name: buffer.name,
+    count: statementCounts[buffer.id],
+  }));
+
   return (
-    <main className="app-root">
-      <section className="topbar" aria-label="Product">
-        <div className="brand-lockup">
-          <div className="brand-mark" aria-hidden="true">
-            SQL
-          </div>
-          <div>
-            <p className="eyebrow">Local Postgres migration analysis</p>
-            <h1>Is my migration safe?</h1>
-          </div>
-        </div>
-        <div className="runtime-pill">
-          <span className={`status-dot ${parserState}`} aria-hidden="true" />
-          <span>{analysis.parser === "libpg_query" ? "libpg_query parser" : "fast fallback"}</span>
-        </div>
-      </section>
+    <main className="page">
+      <div className="shell-frame">
+        <TitleBar
+          activeName={activeBuffer.name}
+          onRecheck={recheck}
+          onNewBuffer={() => openBuffer("untitled.sql", "")}
+          onCloseBuffer={() => closeBuffer(activeId)}
+        />
 
-      <section className={`verdict-panel ${verdictClass(analysis.verdict)}`}>
-        <div>
-          <p className="eyebrow">Verdict</p>
-          <strong>{verdictLabel[analysis.verdict]}</strong>
-        </div>
-        <div className="verdict-copy">
-          <h2>{analysis.headline}</h2>
-          <p>{analysis.summary}</p>
-        </div>
-      </section>
-
-      <section className="control-strip" aria-label="Migration context">
-        <div className="segmented-control" aria-label="Sample migrations">
-          <button type="button" onClick={() => setSample(safeSample)}>
-            Safe sample
-          </button>
-          <button type="button" onClick={() => setSample(unsafeSample)}>
-            Risky sample
-          </button>
-          <button type="button" onClick={() => setSample("")}>
-            Clear
-          </button>
-        </div>
-        <div className="segmented-control" aria-label="Table size">
-          {(Object.keys(tableSizeLabels) as TableSize[]).map((size) => (
-            <button
-              key={size}
-              type="button"
-              className={tableSize === size ? "selected" : undefined}
-              onClick={() => setTableSize((current) => (current === size ? undefined : size))}
-            >
-              {tableSizeLabels[size]}
-            </button>
-          ))}
-        </div>
-        <label className="toggle-control">
-          <input
-            type="checkbox"
-            checked={wrapsInTransaction}
-            onChange={(event) => setWrapsInTransaction(event.target.checked)}
+        <div className="shell-main">
+          <ActivityBar
+            verdictLight={verdict.light}
+            sidebarOpen={sidebarOpen}
+            onToggleSidebar={() => setSidebarOpen((current) => !current)}
+            onRecheck={recheck}
           />
-          <span>Migration tool wraps transaction</span>
-        </label>
-      </section>
 
-      <section className="workspace-grid">
-        <section className="editor-pane" aria-label="Migration input">
-          <div className="pane-header">
-            <div>
-              <span className="toolbar-label">migration.sql</span>
-              <p>Paste a Postgres migration. Analysis stays in this browser.</p>
-            </div>
-            <span>{sql.length.toLocaleString()} chars</span>
+          {sidebarOpen ? (
+            <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} aria-hidden="true" />
+          ) : null}
+
+          <div className={`sidebar${sidebarOpen ? " is-open" : ""}`}>
+            <Sidebar
+              buffers={sidebarBuffers}
+              activeId={activeId}
+              canClose={buffers.length > 1}
+              onSelect={selectBuffer}
+              onClose={closeBuffer}
+              tableSize={tableSize}
+              onTableSize={handleTableSize}
+              wrapsInTransaction={wrapsInTransaction}
+              onWrapsInTransaction={setWrapsInTransaction}
+              samples={SAMPLES}
+              onOpenSample={openBuffer}
+            />
           </div>
-          <textarea
-            aria-label="Paste Postgres migration"
-            spellCheck={false}
-            value={sql}
-            onChange={(event) => {
-              setSql(event.target.value);
-              setTableSize(undefined);
-            }}
-          />
-        </section>
 
-        <section className="result-pane" aria-label="Migration verdict details">
-          {analysis.question ? (
-            <div className="question-panel">
-              <p className="eyebrow">Context required</p>
-              <h2>{analysis.question.label}</h2>
-              <p>{analysis.question.reason}</p>
-            </div>
-          ) : (
-            <div className="finding-lead">
-              <p className="eyebrow">Primary finding</p>
-              <h2>{decisiveFinding?.title ?? "Ready for SQL"}</h2>
-              <p>{decisiveFinding?.why ?? "Paste SQL and the verdict appears here."}</p>
-              {decisiveFinding?.fix ? (
-                <>
-                  <p className="eyebrow safe-rewrite-label">Safer rewrite</p>
-                  <pre>{decisiveFinding.fix}</pre>
-                </>
-              ) : null}
-            </div>
-          )}
+          <div className="shell-content">
+            <TabStrip
+              activeName={activeBuffer.name}
+              verdictLight={verdict.light}
+              verdictLabel={verdict.label}
+              canClose={buffers.length > 1}
+              onClose={() => closeBuffer(activeId)}
+            />
 
-          <div className="findings-list">
-            <div className="list-heading">
-              <span>Statements checked</span>
-              <strong>{analysis.findings.length}</strong>
-            </div>
-            {analysis.findings.length ? (
-              analysis.findings.map((finding) => (
-                <article key={finding.id} className={`finding finding-${finding.severity}`}>
-                  <div className="finding-title-row">
-                    <span>
-                      {finding.severity === "unsafe"
-                        ? "NOT SAFE"
-                        : finding.severity === "context"
-                          ? "ASK"
-                          : "SAFE"}
-                    </span>
-                    <h3>{finding.title}</h3>
-                  </div>
-                  <p>{finding.why}</p>
-                  <code>{finding.statement}</code>
-                </article>
-              ))
-            ) : (
-              <p className="empty-state">Awaiting SQL.</p>
-            )}
+            <Breadcrumb activeName={activeBuffer.name} statementCount={statementCount} />
+
+            <EditorPane
+              key={activeId}
+              sql={activeBuffer.sql}
+              onChange={updateActiveSql}
+              onCursorChange={handleCursorChange}
+            />
+
+            <VerdictBanner
+              verdict={verdict}
+              headline={analysis.headline}
+              summary={analysis.summary}
+              problemCount={problemCount}
+              statementCount={statementCount}
+            />
+
+            <TerminalPanel
+              panelTab={panelTab}
+              onTabChange={setPanelTab}
+              analysis={analysis}
+              verdict={verdict}
+              parserState={parserState}
+              activeName={activeBuffer.name}
+              charCount={activeBuffer.sql.length}
+              onRetryParser={retryParser}
+            />
           </div>
-        </section>
-      </section>
+        </div>
 
-      <section className="architecture-strip" aria-label="Architecture">
-        <div>
-          <strong>Parser boundary</strong>
-          <span>Postgres grammar via libpg_query WASM in a browser worker.</span>
-        </div>
-        <div>
-          <strong>Rules catalog</strong>
-          <span>Versioned TypeScript checks for locks, rewrites, validation scans, and deploy compatibility.</span>
-        </div>
-        <div>
-          <strong>No backend</strong>
-          <span>No D1, no R2, no API, no SQL logs. Future saved examples stay local-only.</span>
-        </div>
-      </section>
+        <StatusBar
+          verdict={verdict}
+          problemCount={problemCount}
+          statementCount={statementCount}
+          cursor={cursor}
+        />
+      </div>
+
+      <footer className="footer-copy">
+        <span>Your SQL never leaves the browser. No API route, no logs, no account.</span>
+        <span>Yes, the name is a database joke about a hot dog joke.</span>
+      </footer>
     </main>
   );
 }

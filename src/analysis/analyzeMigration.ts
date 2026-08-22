@@ -1,9 +1,8 @@
 import type { Analysis, Finding, MigrationContext, ParsedMigration } from "@/src/analysis/types";
 import { buildVerdict } from "@/src/analysis/verdict";
-import { parseSqlFallback } from "@/src/parser/fallbackParser";
 import { rules } from "@/src/rules";
 
-function fallbackSafeFinding(statement: ParsedMigration["statements"][number]): Finding {
+function noRuleFinding(statement: ParsedMigration["statements"][number]): Finding {
   return {
     id: `no-rule-${statement.id}`,
     ruleId: "no-high-risk-pattern",
@@ -11,6 +10,7 @@ function fallbackSafeFinding(statement: ParsedMigration["statements"][number]): 
     statement: statement.compactSql,
     severity: "safe",
     why: "No launch-scope blocking, rewrite, or rollout risk matched this statement.",
+    line: statement.line,
   };
 }
 
@@ -26,14 +26,10 @@ export function analyzeParsedMigration(
       }
     }
 
-    return fallbackSafeFinding(statement);
+    return noRuleFinding(statement);
   });
 
   return buildVerdict(migration, findings);
-}
-
-export function analyzeMigrationFromText(sql: string, context: MigrationContext = {}): Analysis {
-  return analyzeParsedMigration(parseSqlFallback(sql), context);
 }
 
 export function parseErrorAnalysis(sql: string, message: string): Analysis {
@@ -44,5 +40,6 @@ export function parseErrorAnalysis(sql: string, message: string): Analysis {
     findings: [],
     diagnostics: [{ source: "libpg_query", message }],
     parser: "libpg_query",
+    statements: [],
   };
 }

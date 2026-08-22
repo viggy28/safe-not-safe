@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { analyzeParsedMigration } from "../src/analysis/analyzeMigration";
-import { parseSqlFallback } from "../src/parser/fallbackParser";
 import { parseSqlWithLibpgQuery } from "../src/parser/parseWithLibpgQuery";
 
 async function analyze(sql: string, context = {}) {
@@ -61,10 +60,3 @@ test("foreign key validation asks for table size before deciding", async () => {
   assert.equal(small.verdict, "SAFE");
 });
 
-test("fallback parser still catches core launch risks", () => {
-  const parsed = parseSqlFallback("ALTER TABLE users ALTER COLUMN age TYPE bigint;");
-  const result = analyzeParsedMigration(parsed);
-
-  assert.equal(result.verdict, "NEEDS_CONTEXT");
-  assert.equal(result.question?.id, "table-size");
-});
