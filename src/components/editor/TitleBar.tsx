@@ -20,6 +20,7 @@ type TitleBarProps = {
 
 export function TitleBar({ activeName, onRecheck, onNewBuffer, onCloseBuffer }: TitleBarProps) {
   const [fileOpen, setFileOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   function handleMenu(label: string) {
     if (label === "Check") {
@@ -74,6 +75,34 @@ export function TitleBar({ activeName, onRecheck, onNewBuffer, onCloseBuffer }: 
                   >
                     Close buffer
                   </button>
+                </div>
+              ) : null}
+            </div>
+          ) : item.label === "Help" ? (
+            <div key={item.label} className="menu-wrap">
+              <button
+                type="button"
+                role="menuitem"
+                className="menu-item"
+                onClick={() => setHelpOpen((open) => !open)}
+                onBlur={() => setHelpOpen(false)}
+                aria-haspopup="menu"
+                aria-expanded={helpOpen}
+              >
+                {item.label}
+              </button>
+              {helpOpen ? (
+                <div className="menu-dropdown" role="menu">
+                  <a
+                    role="menuitem"
+                    href="https://github.com/viggy28/safe-not-safe"
+                    target="_blank"
+                    rel="noreferrer"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => setHelpOpen(false)}
+                  >
+                    View source on GitHub
+                  </a>
                 </div>
               ) : null}
             </div>
