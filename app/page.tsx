@@ -81,7 +81,7 @@ export default function Home() {
   const [tableSize, setTableSize] = useState<TableSize | undefined>();
   const [wrapsInTransaction, setWrapsInTransaction] = useState(false);
   const [panelTab, setPanelTab] = useState<PanelTab>("terminal");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cursor, setCursor] = useState<Cursor>({ line: 1, col: 1 });
   const [recheckTick, setRecheckTick] = useState(0);
   const [workerStatus, setWorkerStatus] = useState<WorkerStatus>("initializing");
@@ -114,6 +114,16 @@ export default function Home() {
   const verdict = verdictMeta[analysis.verdict];
   const statementCount = analysis.statements.length;
   const problemCount = analysis.findings.filter((finding) => finding.severity !== "safe").length;
+
+  useEffect(() => {
+    const desktopQuery = window.matchMedia("(min-width: 1001px)");
+    const syncSidebarForViewport = () => setSidebarOpen(desktopQuery.matches);
+
+    syncSidebarForViewport();
+    desktopQuery.addEventListener("change", syncSidebarForViewport);
+
+    return () => desktopQuery.removeEventListener("change", syncSidebarForViewport);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

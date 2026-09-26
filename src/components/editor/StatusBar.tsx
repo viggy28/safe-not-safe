@@ -17,10 +17,10 @@ export function StatusBar({ verdict, problemCount, statementCount, cursor }: Sta
         {problemCount} flagged · {statementCount} statements
       </span>
       <span className="status-spacer" />
-      <span className="status-meta">Ln {cursor.line}, Col {cursor.col}</span>
-      <span className="status-meta">PostgreSQL 16</span>
-      <span className="status-meta">SQL</span>
-      <span className="status-meta">no telemetry</span>
+      <span className="status-meta status-mobile-hidden">Ln {cursor.line}, Col {cursor.col}</span>
+      <span className="status-meta status-mobile-hidden">PostgreSQL 16</span>
+      <span className="status-meta status-mobile-hidden">SQL</span>
+      <span className="status-meta status-mobile-hidden">no telemetry</span>
       <a
         className="status-link"
         href="https://github.com/viggy28/safe-not-safe"
