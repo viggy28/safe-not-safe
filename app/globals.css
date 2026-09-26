@@ -1118,12 +1118,18 @@ button {
 /* ──────────────────────────────── Responsive ────────────────────────────── */
 
 @media (max-width: 1000px) {
+  .activity-bar {
+    position: relative;
+    z-index: 45;
+  }
+
   .sidebar {
     position: absolute;
     top: 0;
     bottom: 0;
     left: 48px;
     z-index: 40;
+    width: min(280px, calc(100% - 48px));
     box-shadow: 12px 0 40px rgb(27 27 25 / 18%);
     transform: translateX(-110%);
     transition: transform 0.15s ease;
@@ -1136,7 +1142,7 @@ button {
   .sidebar-backdrop {
     display: block;
     position: absolute;
-    inset: 0;
+    inset: 0 0 0 48px;
     z-index: 35;
     background: rgb(27 27 25 / 22%);
   }
@@ -1161,8 +1167,27 @@ button {
     border-right: 0;
   }
 
+  .title-bar {
+    gap: 8px;
+    height: 42px;
+    padding: 0 8px;
+  }
+
+  .traffic-lights {
+    gap: 5px;
+  }
+
+  .tl {
+    width: 9px;
+    height: 9px;
+  }
+
   .menu-bar .menu-item[data-decorative] {
     display: none;
+  }
+
+  .menu-item {
+    padding-inline: 6px;
   }
 
   .title-center {
@@ -1172,22 +1197,101 @@ button {
   .title-chip {
     width: auto;
     flex: 1;
+    padding-inline: 8px;
   }
 
   .title-offline {
     display: none;
   }
 
+  .activity-bar {
+    width: 42px;
+  }
+
+  .sidebar {
+    left: 42px;
+    width: min(280px, calc(100% - 42px));
+  }
+
+  .sidebar-backdrop {
+    left: 42px;
+  }
+
+  .tab {
+    min-width: 0;
+    padding-inline: 10px;
+  }
+
+  .tab-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .tab-verdict {
+    flex: none;
+    padding-inline: 10px;
+  }
+
+  .breadcrumb {
+    overflow: hidden;
+    padding-inline: 12px;
+    white-space: nowrap;
+  }
+
+  .breadcrumb-current {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .editor-pane {
+    height: 280px;
+    min-height: 240px;
+  }
+
+  .editor-gutter {
+    width: 40px;
+  }
+
+  .editor-gutter > div {
+    padding-right: 9px;
+  }
+
+  .editor-input {
+    padding-right: 12px;
+    font-size: 12px;
+  }
+
+  .editor-minimap {
+    display: none;
+  }
+
   .verdict-banner {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 16px;
+    padding: 14px 16px;
   }
 
   .verdict-copy {
-    padding-left: 14px;
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--banner-divider);
+    border-left: 0;
+    padding-top: 10px;
+    padding-left: 0;
   }
 
   .verdict-word {
+    min-width: 0;
+    overflow-wrap: anywhere;
     font-size: 24px;
+  }
+
+  .verdict-spacer {
+    display: none;
+  }
+
+  .verdict-count {
+    align-self: center;
   }
 
   .terminal-tab-actions {
@@ -1195,11 +1299,33 @@ button {
   }
 
   .terminal-tabs {
+    overflow-x: auto;
     padding: 0 8px;
+    scrollbar-width: none;
+  }
+
+  .terminal-tabs::-webkit-scrollbar {
+    display: none;
   }
 
   .terminal-tab {
+    flex: none;
     padding: 0 9px;
+  }
+
+  .terminal-tabs-spacer {
+    display: none;
+  }
+
+  .terminal-body {
+    min-height: 180px;
+    padding: 12px 14px 16px;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  .term-finding-why {
+    padding-left: 12px;
   }
 
   .ast-key {
@@ -1217,6 +1343,15 @@ button {
   .rules-col-state,
   .rules-col-at {
     width: auto;
+  }
+
+  .status-bar {
+    gap: 12px;
+    padding-inline: 10px;
+  }
+
+  .status-mobile-hidden {
+    display: none;
   }
 
   .footer-copy {
