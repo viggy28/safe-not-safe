@@ -168,7 +168,8 @@ button {
   box-shadow: 0 12px 32px rgb(27 27 25 / 14%);
 }
 
-.menu-dropdown button {
+.menu-dropdown button,
+.menu-dropdown a {
   padding: 7px 10px;
   border: 0;
   border-radius: 4px;
@@ -176,9 +177,11 @@ button {
   color: var(--text-secondary);
   text-align: left;
   font-size: 12.5px;
+  text-decoration: none;
 }
 
-.menu-dropdown button:hover {
+.menu-dropdown button:hover,
+.menu-dropdown a:hover {
   background: var(--hover-soft);
   color: var(--text-primary);
 }
@@ -1083,6 +1086,18 @@ button {
 
 .status-meta {
   opacity: 0.85;
+}
+
+.status-link {
+  color: inherit;
+  font-weight: 600;
+  opacity: 0.9;
+  text-decoration: none;
+}
+
+.status-link:hover {
+  opacity: 1;
+  text-decoration: underline;
 }
 
 .status-spacer {

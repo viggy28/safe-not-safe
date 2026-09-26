@@ -36,6 +36,7 @@ test("server-renders the developer migration checker", async () => {
   assert.match(html, /CHECKING/);
   assert.match(html, /Loading PostgreSQL parser/);
   assert.match(html, /libpg_query/);
+  assert.match(html, /href="https:\/\/github\.com\/viggy28\/safe-not-safe"/);
   assert.doesNotMatch(html, /text fallback|fast fallback/i);
   assert.doesNotMatch(html, /Your site is taking shape|react-loading-skeleton|codex-preview/i);
   assert.doesNotMatch(html, /localhost:3000\/og\.png/i);

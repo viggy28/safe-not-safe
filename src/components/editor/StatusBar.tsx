@@ -21,6 +21,14 @@ export function StatusBar({ verdict, problemCount, statementCount, cursor }: Sta
       <span className="status-meta">PostgreSQL 16</span>
       <span className="status-meta">SQL</span>
       <span className="status-meta">no telemetry</span>
+      <a
+        className="status-link"
+        href="https://github.com/viggy28/safe-not-safe"
+        target="_blank"
+        rel="noreferrer"
+      >
+        GitHub
+      </a>
     </div>
   );
 }
