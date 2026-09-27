@@ -9,7 +9,7 @@ export type Verdict =
 
 export type FindingSeverity = "safe" | "unsafe" | "context" | "unsupported";
 
-export type TableSize = "small" | "medium" | "large";
+export type TableSize = "empty" | "small" | "medium" | "large";
 
 export type MigrationContext = {
   tableSize?: TableSize;
@@ -85,6 +85,7 @@ export type ParsedStatement = {
   alterActions: AlterAction[];
   hasDefault?: boolean;
   hasExpressionDefault?: boolean;
+  hasNotNullWithoutDefault?: boolean;
   constraintType?: "foreign_key" | "unique" | "other";
   constraintValidatesImmediately?: boolean;
   /** 1-based line number in the source SQL where this statement begins. */

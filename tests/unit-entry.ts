@@ -42,6 +42,36 @@ test("concurrent index inside transaction is not safe", async () => {
   assert.equal(result.decisiveFinding?.ruleId, "concurrently-inside-transaction");
 });
 
+test("new NOT NULL column without a default requires an empty table", async () => {
+  const sql = "ALTER TABLE users ADD COLUMN status text NOT NULL;";
+
+  const unknown = await analyze(sql);
+  assert.equal(unknown.verdict, "NEEDS_CONTEXT");
+  assert.equal(unknown.decisiveFinding?.ruleId, "add-column-not-null-without-default");
+  assert.equal(unknown.question?.id, "table-size");
+
+  const empty = await analyze(sql, { tableSize: "empty" });
+  assert.equal(empty.verdict, "SAFE");
+  assert.equal(empty.findings[0]?.ruleId, "add-column-not-null-without-default");
+
+  const nonEmpty = await analyze(sql, { tableSize: "small" });
+  assert.equal(nonEmpty.verdict, "NOT_SAFE");
+  assert.equal(nonEmpty.decisiveFinding?.ruleId, "add-column-not-null-without-default");
+
+  const mixedColumns = await analyze(
+    "ALTER TABLE users ADD COLUMN role text DEFAULT 'member', ADD COLUMN status text NOT NULL;",
+  );
+  assert.equal(mixedColumns.verdict, "NEEDS_CONTEXT");
+  assert.equal(mixedColumns.decisiveFinding?.ruleId, "add-column-not-null-without-default");
+});
+
+test("new NOT NULL column with a constant default remains safe", async () => {
+  const result = await analyze("ALTER TABLE users ADD COLUMN status text NOT NULL DEFAULT 'active';");
+
+  assert.equal(result.verdict, "SAFE");
+  assert.equal(result.findings[0]?.ruleId, "add-column-constant-default");
+});
+
 test("foreign key validation asks for table size before deciding", async () => {
   const sql = `
     ALTER TABLE orders
