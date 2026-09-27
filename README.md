@@ -73,6 +73,7 @@ npx tsc --noEmit
 - regular `CREATE INDEX` vs `CREATE INDEX CONCURRENTLY`
 - `CONCURRENTLY` inside transaction wrappers
 - added columns with literal or expression defaults
+- new `NOT NULL` columns that require an empty table or a default
 - `ALTER COLUMN TYPE` table rewrites
 - validating foreign keys without `NOT VALID`
 - `VALIDATE CONSTRAINT`

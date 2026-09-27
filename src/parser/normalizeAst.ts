@@ -61,6 +61,11 @@ function hasDefault(columnDef: AnyRecord) {
   return constraints.some((item) => unwrap<AnyRecord>(item, "Constraint")?.contype === "CONSTR_DEFAULT");
 }
 
+function hasNotNull(columnDef: AnyRecord) {
+  const constraints = Array.isArray(columnDef.constraints) ? columnDef.constraints : [];
+  return constraints.some((item) => unwrap<AnyRecord>(item, "Constraint")?.contype === "CONSTR_NOTNULL");
+}
+
 function normalizeStatement(sql: string, stmtEnvelope: AnyRecord, index: number): ParsedStatement {
   const location = typeof stmtEnvelope.stmt_location === "number" ? stmtEnvelope.stmt_location : 0;
   const length = typeof stmtEnvelope.stmt_len === "number" ? stmtEnvelope.stmt_len : undefined;
@@ -114,6 +119,9 @@ function normalizeStatement(sql: string, stmtEnvelope: AnyRecord, index: number)
           normalized.hasExpressionDefault = columnDef
             ? hasExpressionDefault(columnDef)
             : normalized.hasExpressionDefault;
+          normalized.hasNotNullWithoutDefault = columnDef
+            ? normalized.hasNotNullWithoutDefault || (hasNotNull(columnDef) && !hasDefault(columnDef))
+            : normalized.hasNotNullWithoutDefault;
           break;
         }
         case "AT_AlterColumnType":

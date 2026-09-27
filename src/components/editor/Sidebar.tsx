@@ -3,6 +3,7 @@
 import type { TableSize } from "@/src/analysis/types";
 
 export const TABLE_SIZE_OPTIONS: Array<{ key: TableSize; label: string }> = [
+  { key: "empty", label: "Empty" },
   { key: "small", label: "Under 50k" },
   { key: "medium", label: "50k to 5M" },
   { key: "large", label: "Over 5M" },

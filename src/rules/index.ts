@@ -97,6 +97,56 @@ export const rules: Rule[] = [
     },
   },
   {
+    id: "add-column-not-null-without-default",
+    checks: "ADD COLUMN NOT NULL without a default requires an empty table",
+    evaluate(statement, _migration, context) {
+      if (
+        statement.kind !== "alter_table" ||
+        !hasAction(statement, "add_column") ||
+        !statement.hasNotNullWithoutDefault
+      ) {
+        return null;
+      }
+
+      if (!context.tableSize) {
+        return {
+          ...finding(
+            statement,
+            this.id,
+            "New NOT NULL column needs an empty table",
+            "context",
+            `Existing rows in ${tableName(statement)} would receive NULL, so PostgreSQL rejects this migration unless the table is empty.`,
+          ),
+          question: {
+            id: "table-size",
+            table: tableName(statement),
+            label: `Does ${tableName(statement)} contain any rows?`,
+            reason: "A new NOT NULL column without a default only succeeds on an empty table.",
+          },
+        };
+      }
+
+      if (context.tableSize === "empty") {
+        return finding(
+          statement,
+          this.id,
+          "NOT NULL column on an empty table",
+          "safe",
+          `${tableName(statement)} is empty, so there are no existing rows that would violate NOT NULL.`,
+        );
+      }
+
+      return finding(
+        statement,
+        this.id,
+        "Migration fails on existing rows",
+        "unsafe",
+        `Existing rows in ${tableName(statement)} would receive NULL, so PostgreSQL will reject this migration.`,
+        `ALTER TABLE ${tableName(statement)} ADD COLUMN ...;\n-- Deploy writes and backfill existing rows.\nALTER TABLE ${tableName(statement)} ALTER COLUMN ... SET NOT NULL;`,
+      );
+    },
+  },
+  {
     id: "add-column-expression-default",
     checks: "ADD COLUMN with a non-literal default rewrites rows",
     evaluate(statement) {
@@ -162,7 +212,7 @@ export const rules: Rule[] = [
         };
       }
 
-      if (context.tableSize === "small") {
+      if (context.tableSize === "empty" || context.tableSize === "small") {
         return finding(
           statement,
           this.id,
@@ -212,7 +262,7 @@ export const rules: Rule[] = [
         };
       }
 
-      if (context.tableSize === "small") {
+      if (context.tableSize === "empty" || context.tableSize === "small") {
         return finding(
           statement,
           this.id,
