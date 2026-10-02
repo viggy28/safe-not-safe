@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import vinext from "vinext";
 import { defineConfig } from "vite";
 import { sites } from "./build/sites-vite-plugin";
@@ -15,7 +16,25 @@ export default defineConfig(async () => {
   // Wrangler snapshots its log path while the Cloudflare plugin is imported.
   const { cloudflare } = await import("@cloudflare/vite-plugin");
 
+  const parserAliases = [15, 16, 17, 18].flatMap((version) => {
+    const parserRoot = fileURLToPath(
+      new URL(`./node_modules/@pgsql/parser/wasm/v${version}/`, import.meta.url),
+    );
+
+    return [
+      {
+        find: `@pgsql-parser/v${version}-module`,
+        replacement: `${parserRoot}libpg-query.js`,
+      },
+      {
+        find: `@pgsql-parser/v${version}-wasm?url`,
+        replacement: `${parserRoot}libpg-query.wasm?url`,
+      },
+    ];
+  });
+
   return {
+    resolve: { alias: parserAliases },
     server: isCodexSeatbeltSandbox
       ? { watch: { useFsEvents: false, usePolling: true } }
       : undefined,

@@ -1,6 +1,10 @@
 "use client";
 
 import type { TableSize } from "@/src/analysis/types";
+import {
+  POSTGRES_VERSIONS,
+  type PostgresVersion,
+} from "@/src/parser/postgresVersion";
 
 export const TABLE_SIZE_OPTIONS: Array<{ key: TableSize; label: string }> = [
   { key: "empty", label: "Empty" },
@@ -25,6 +29,9 @@ type SidebarProps = {
   onTableSize: (size: TableSize) => void;
   wrapsInTransaction: boolean;
   onWrapsInTransaction: (checked: boolean) => void;
+  postgresVersion: PostgresVersion;
+  postgresVersionReady: boolean;
+  onPostgresVersion: (version: PostgresVersion) => void;
   samples: Array<{ label: string; name: string; sql: string }>;
   onOpenSample: (name: string, sql: string) => void;
 };
@@ -39,6 +46,9 @@ export function Sidebar({
   onTableSize,
   wrapsInTransaction,
   onWrapsInTransaction,
+  postgresVersion,
+  postgresVersionReady,
+  onPostgresVersion,
   samples,
   onOpenSample,
 }: SidebarProps) {
@@ -96,6 +106,23 @@ export function Sidebar({
       </div>
 
       <div className="sidebar-context">
+        <label className="sidebar-context-label" htmlFor="postgres-version">
+          PostgreSQL version
+        </label>
+        <select
+          id="postgres-version"
+          className="sidebar-select"
+          value={postgresVersion}
+          disabled={!postgresVersionReady}
+          onChange={(event) => onPostgresVersion(Number(event.target.value) as PostgresVersion)}
+        >
+          {POSTGRES_VERSIONS.map((version) => (
+            <option key={version} value={version}>
+              PostgreSQL {version}
+            </option>
+          ))}
+        </select>
+
         <span className="sidebar-context-label">Rows in target table</span>
         <div className="sidebar-size-group" role="radiogroup" aria-label="Rows in target table">
           {TABLE_SIZE_OPTIONS.map((option) => (

@@ -1,6 +1,10 @@
 import type { Analysis, Finding, MigrationContext, ParsedMigration } from "@/src/analysis/types";
 import { buildVerdict } from "@/src/analysis/verdict";
 import { rules } from "@/src/rules";
+import {
+  DEFAULT_POSTGRES_VERSION,
+  type PostgresVersion,
+} from "@/src/parser/postgresVersion";
 
 function noRuleFinding(statement: ParsedMigration["statements"][number]): Finding {
   return {
@@ -32,7 +36,11 @@ export function analyzeParsedMigration(
   return buildVerdict(migration, findings);
 }
 
-export function parseErrorAnalysis(sql: string, message: string): Analysis {
+export function parseErrorAnalysis(
+  sql: string,
+  message: string,
+  postgresVersion: PostgresVersion = DEFAULT_POSTGRES_VERSION,
+): Analysis {
   return {
     verdict: "UNSUPPORTED",
     headline: "Postgres parser could not read this SQL.",
@@ -40,6 +48,7 @@ export function parseErrorAnalysis(sql: string, message: string): Analysis {
     findings: [],
     diagnostics: [{ source: "libpg_query", message }],
     parser: "libpg_query",
+    postgresVersion,
     statements: [],
   };
 }

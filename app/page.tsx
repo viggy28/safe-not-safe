@@ -20,10 +20,16 @@ import { EditorPane } from "@/src/components/editor/EditorPane";
 import { VerdictBanner } from "@/src/components/editor/VerdictBanner";
 import { TerminalPanel } from "@/src/components/editor/TerminalPanel";
 import { StatusBar } from "@/src/components/editor/StatusBar";
+import {
+  DEFAULT_POSTGRES_VERSION,
+  isPostgresVersion,
+  type PostgresVersion,
+} from "@/src/parser/postgresVersion";
 
 type WorkerStatus = "initializing" | "ready" | "error";
 
 const INITIAL_BUFFER: Buffer = { id: 1, name: "migration.sql", sql: safeSample };
+const POSTGRES_VERSION_STORAGE_KEY = "safe-not-safe:postgres-version";
 
 const SAMPLES: Array<{ label: string; name: string; sql: string }> = [
   { label: "risky.sql", name: "risky.sql", sql: unsafeSample },
@@ -32,10 +38,15 @@ const SAMPLES: Array<{ label: string; name: string; sql: string }> = [
 ];
 
 function inputKey(sql: string, context: MigrationContext) {
-  return `${sql}\u0000${context.tableSize ?? ""}\u0000${context.wrapsInTransaction ? "1" : "0"}`;
+  return `${sql}\u0000${context.tableSize ?? ""}\u0000${context.wrapsInTransaction ? "1" : "0"}\u0000${context.postgresVersion ?? DEFAULT_POSTGRES_VERSION}`;
 }
 
-function pendingAnalysis(sql: string, parserState: ParserState, parserError?: string): Analysis {
+function pendingAnalysis(
+  sql: string,
+  parserState: ParserState,
+  postgresVersion: PostgresVersion,
+  parserError?: string,
+): Analysis {
   if (!sql.trim()) {
     return {
       verdict: "NO_INPUT",
@@ -44,6 +55,7 @@ function pendingAnalysis(sql: string, parserState: ParserState, parserError?: st
       findings: [],
       diagnostics: [],
       parser: "libpg_query",
+      postgresVersion,
       statements: [],
     };
   }
@@ -56,6 +68,7 @@ function pendingAnalysis(sql: string, parserState: ParserState, parserError?: st
       findings: [],
       diagnostics: parserError ? [{ source: "libpg_query", message: parserError }] : [],
       parser: "libpg_query",
+      postgresVersion,
       statements: [],
     };
   }
@@ -70,6 +83,7 @@ function pendingAnalysis(sql: string, parserState: ParserState, parserError?: st
     findings: [],
     diagnostics: [],
     parser: "libpg_query",
+    postgresVersion,
     statements: [],
   };
 }
@@ -80,6 +94,8 @@ export default function Home() {
   const [nextId, setNextId] = useState(2);
   const [tableSize, setTableSize] = useState<TableSize | undefined>();
   const [wrapsInTransaction, setWrapsInTransaction] = useState(false);
+  const [postgresVersion, setPostgresVersion] = useState<PostgresVersion>(DEFAULT_POSTGRES_VERSION);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [panelTab, setPanelTab] = useState<PanelTab>("terminal");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cursor, setCursor] = useState<Cursor>({ line: 1, col: 1 });
@@ -93,8 +109,8 @@ export default function Home() {
 
   const activeBuffer = buffers.find((buffer) => buffer.id === activeId) ?? buffers[0];
   const context: MigrationContext = useMemo(
-    () => ({ tableSize, wrapsInTransaction }),
-    [tableSize, wrapsInTransaction],
+    () => ({ tableSize, wrapsInTransaction, postgresVersion }),
+    [tableSize, wrapsInTransaction, postgresVersion],
   );
   const currentKey = inputKey(activeBuffer.sql, context);
   const cachedEntry = analysisCache[activeId];
@@ -109,11 +125,23 @@ export default function Home() {
           : "analyzing";
   const analysis =
     parserState === "error"
-      ? pendingAnalysis(activeBuffer.sql, parserState, parserError)
-      : cachedAnalysis ?? pendingAnalysis(activeBuffer.sql, parserState, parserError);
+      ? pendingAnalysis(activeBuffer.sql, parserState, postgresVersion, parserError)
+      : cachedAnalysis ?? pendingAnalysis(activeBuffer.sql, parserState, postgresVersion, parserError);
   const verdict = verdictMeta[analysis.verdict];
   const statementCount = analysis.statements.length;
   const problemCount = analysis.findings.filter((finding) => finding.severity !== "safe").length;
+
+  useEffect(() => {
+    const storedVersion = Number(window.localStorage.getItem(POSTGRES_VERSION_STORAGE_KEY));
+    const timeout = window.setTimeout(() => {
+      if (isPostgresVersion(storedVersion)) {
+        setPostgresVersion(storedVersion);
+      }
+      setSettingsLoaded(true);
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, []);
 
   useEffect(() => {
     const desktopQuery = window.matchMedia("(min-width: 1001px)");
@@ -149,7 +177,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (workerStatus !== "ready") {
+    if (workerStatus !== "ready" || !settingsLoaded) {
       return;
     }
 
@@ -180,7 +208,7 @@ export default function Home() {
       cancelled = true;
       window.clearTimeout(timeout);
     };
-  }, [activeBuffer.id, activeBuffer.sql, context, recheckTick, workerStatus]);
+  }, [activeBuffer.id, activeBuffer.sql, context, recheckTick, settingsLoaded, workerStatus]);
 
   function retryParser() {
     setWorkerStatus("initializing");
@@ -257,6 +285,11 @@ export default function Home() {
     setTableSize((current) => (current === size ? undefined : size));
   }
 
+  function handlePostgresVersion(version: PostgresVersion) {
+    setPostgresVersion(version);
+    window.localStorage.setItem(POSTGRES_VERSION_STORAGE_KEY, String(version));
+  }
+
   function handleCursorChange(next: Cursor) {
     setCursor((current) => (current.line === next.line && current.col === next.col ? current : next));
   }
@@ -300,6 +333,9 @@ export default function Home() {
               onTableSize={handleTableSize}
               wrapsInTransaction={wrapsInTransaction}
               onWrapsInTransaction={setWrapsInTransaction}
+              postgresVersion={postgresVersion}
+              postgresVersionReady={settingsLoaded}
+              onPostgresVersion={handlePostgresVersion}
               samples={SAMPLES}
               onOpenSample={openBuffer}
             />
@@ -339,6 +375,7 @@ export default function Home() {
               parserState={parserState}
               activeName={activeBuffer.name}
               charCount={activeBuffer.sql.length}
+              postgresVersion={postgresVersion}
               onRetryParser={retryParser}
             />
           </div>
@@ -349,6 +386,7 @@ export default function Home() {
           problemCount={problemCount}
           statementCount={statementCount}
           cursor={cursor}
+          postgresVersion={postgresVersion}
         />
       </div>
 

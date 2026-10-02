@@ -16,7 +16,8 @@ await build({
   format: "esm",
   platform: "node",
   target: "node22",
-  external: ["@libpg-query/parser"],
+  define: { "import.meta.env.SSR": "true" },
+  external: ["@pgsql/parser/*"],
   plugins: [
     {
       name: "workspace-alias",

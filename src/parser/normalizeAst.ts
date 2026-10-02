@@ -1,4 +1,5 @@
 import type { ParsedMigration, ParsedStatement } from "@/src/analysis/types";
+import type { PostgresVersion } from "@/src/parser/postgresVersion";
 import { compactSql, indexName as inferredIndexName, tableFromAlter } from "@/src/parser/sqlText";
 
 type AnyRecord = Record<string, unknown>;
@@ -181,7 +182,11 @@ function normalizeStatement(sql: string, stmtEnvelope: AnyRecord, index: number)
   return base;
 }
 
-export function normalizeLibpgQueryResult(sql: string, parseResult: unknown): ParsedMigration {
+export function normalizeLibpgQueryResult(
+  sql: string,
+  parseResult: unknown,
+  postgresVersion: PostgresVersion,
+): ParsedMigration {
   const result = asRecord(parseResult);
   const stmts = Array.isArray(result?.stmts) ? result.stmts : [];
 
@@ -189,6 +194,7 @@ export function normalizeLibpgQueryResult(sql: string, parseResult: unknown): Pa
     sql,
     statements: stmts.map((stmt, index) => normalizeStatement(sql, stmt as AnyRecord, index)),
     parser: "libpg_query",
+    postgresVersion,
     diagnostics: [],
   };
 }
