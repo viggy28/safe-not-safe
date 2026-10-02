@@ -1,14 +1,21 @@
 import type { Analysis, Finding, ParsedMigration } from "@/src/analysis/types";
 
+function analysisSource(migration: ParsedMigration) {
+  return {
+    diagnostics: migration.diagnostics,
+    parser: migration.parser,
+    postgresVersion: migration.postgresVersion,
+    statements: migration.statements,
+  };
+}
+
 function noSqlAnalysis(migration: ParsedMigration): Analysis {
   return {
     verdict: "NO_INPUT",
     headline: "Waiting on SQL.",
     summary: "Paste a migration, or load one of the samples.",
     findings: [],
-    diagnostics: migration.diagnostics,
-    parser: migration.parser,
-    statements: migration.statements,
+    ...analysisSource(migration),
   };
 }
 
@@ -25,9 +32,7 @@ export function buildVerdict(migration: ParsedMigration, findings: Finding[]): A
       summary: unsafe.why,
       findings,
       decisiveFinding: unsafe,
-      diagnostics: migration.diagnostics,
-      parser: migration.parser,
-      statements: migration.statements,
+      ...analysisSource(migration),
     };
   }
 
@@ -40,9 +45,7 @@ export function buildVerdict(migration: ParsedMigration, findings: Finding[]): A
       findings,
       decisiveFinding: context,
       question: context.question,
-      diagnostics: migration.diagnostics,
-      parser: migration.parser,
-      statements: migration.statements,
+      ...analysisSource(migration),
     };
   }
 
@@ -54,9 +57,7 @@ export function buildVerdict(migration: ParsedMigration, findings: Finding[]): A
       summary: unsupported.why,
       findings,
       decisiveFinding: unsupported,
-      diagnostics: migration.diagnostics,
-      parser: migration.parser,
-      statements: migration.statements,
+      ...analysisSource(migration),
     };
   }
 
@@ -66,8 +67,6 @@ export function buildVerdict(migration: ParsedMigration, findings: Finding[]): A
     summary: "The checked statements avoid the common lock, rewrite, and rollout traps in the launch rule set.",
     findings,
     decisiveFinding: findings[0],
-    diagnostics: migration.diagnostics,
-    parser: migration.parser,
-    statements: migration.statements,
+    ...analysisSource(migration),
   };
 }

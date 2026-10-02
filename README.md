@@ -14,8 +14,8 @@ renames. Safe / Not Safe catches the common traps while keeping raw SQL local.
 ## Architecture
 
 - Vinext + React app shell
-- `@libpg-query/parser` WASM for every authoritative parse
-- Eagerly initialized browser Web Worker for parser/rules execution
+- `@pgsql/parser` PostgreSQL 15–18 WASM builds for every authoritative parse
+- Version-selectable browser Web Worker for parser/rules execution
 - Neutral loading/error states instead of heuristic safety verdicts
 - TypeScript rules catalog for migration risk checks
 - No backend, no database, no SQL logging

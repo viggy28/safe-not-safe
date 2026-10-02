@@ -6,7 +6,8 @@ export type ParserState = "initializing" | "analyzing" | "ready" | "error";
 type WorkerReady = { type: "ready" };
 type WorkerInitError = { type: "init-error"; message: string };
 type WorkerResult = { type: "result"; id: number; analysis: Analysis };
-type WorkerMessage = WorkerReady | WorkerInitError | WorkerResult;
+type WorkerRequestError = { type: "request-error"; id: number; message: string };
+type WorkerMessage = WorkerReady | WorkerInitError | WorkerResult | WorkerRequestError;
 
 type PendingRequest = {
   resolve: (analysis: Analysis) => void;
@@ -87,6 +88,12 @@ function createSession(): WorkerSession {
 
     clearTimeout(pending.timeout);
     activeSession.pending.delete(message.id);
+
+    if (message.type === "request-error") {
+      pending.reject(new Error(message.message));
+      return;
+    }
+
     pending.resolve(message.analysis);
   });
 
@@ -105,7 +112,7 @@ function getSession() {
   return session;
 }
 
-/** Start the worker and eagerly download/compile libpg_query WASM. */
+/** Start the parser worker. Versioned WASM is loaded on the first analysis request. */
 export function initializeParserWorker(): Promise<void> {
   return getSession().ready;
 }

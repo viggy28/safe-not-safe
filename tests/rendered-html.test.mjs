@@ -36,6 +36,8 @@ test("server-renders the developer migration checker", async () => {
   assert.match(html, /CHECKING/);
   assert.match(html, /Loading PostgreSQL parser/);
   assert.match(html, /libpg_query/);
+  assert.match(html, /PostgreSQL version/);
+  assert.match(html, /<option value="17" selected="">PostgreSQL <!-- -->17<\/option>/);
   assert.match(html, /href="https:\/\/github\.com\/viggy28\/safe-not-safe"/);
   assert.doesNotMatch(html, /text fallback|fast fallback/i);
   assert.doesNotMatch(html, /Your site is taking shape|react-loading-skeleton|codex-preview/i);
@@ -46,7 +48,7 @@ test("client bundle emits a browser worker and WASM without fallback code", asyn
   const staticUrl = new URL("../dist/client/_next/static/", import.meta.url);
   const assets = await readdir(staticUrl);
   assert.ok(assets.some((name) => /^parserWorker-.*\.js$/.test(name)));
-  assert.ok(assets.some((name) => /^libpg-query-.*\.wasm$/.test(name)));
+  assert.equal(assets.filter((name) => /^libpg-query-.*\.wasm$/.test(name)).length, 4);
 
   const chunksUrl = new URL("chunks/", staticUrl);
   const chunks = (await readdir(chunksUrl)).filter((name) => name.endsWith(".js"));

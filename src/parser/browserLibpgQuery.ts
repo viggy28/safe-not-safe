@@ -1,5 +1,4 @@
-import PgQueryModule from "@libpg-query/parser/wasm/libpg-query.js";
-import wasmUrl from "@libpg-query/parser/wasm/libpg-query.wasm?url";
+import type { PostgresVersion } from "@/src/parser/postgresVersion";
 
 type PgQueryWasmModule = {
   _free(ptr: number): void;
@@ -12,33 +11,80 @@ type PgQueryWasmModule = {
   UTF8ToString(ptr: number): string;
 };
 
-let modulePromise: Promise<PgQueryWasmModule> | undefined;
+type PgQueryModuleFactory = (options?: {
+  wasmBinary?: ArrayBuffer | Uint8Array;
+  locateFile?: (path: string) => string;
+}) => Promise<PgQueryWasmModule>;
 
-async function loadModule() {
+type ParserAsset = {
+  createModule: PgQueryModuleFactory;
+  wasmUrl: string;
+};
+
+const assetLoaders: Record<PostgresVersion, () => Promise<ParserAsset>> = {
+  15: async () => {
+    const [{ default: createModule }, { default: wasmUrl }] = await Promise.all([
+      import("@pgsql-parser/v15-module"),
+      import("@pgsql-parser/v15-wasm?url"),
+    ]);
+    return { createModule, wasmUrl };
+  },
+  16: async () => {
+    const [{ default: createModule }, { default: wasmUrl }] = await Promise.all([
+      import("@pgsql-parser/v16-module"),
+      import("@pgsql-parser/v16-wasm?url"),
+    ]);
+    return { createModule, wasmUrl };
+  },
+  17: async () => {
+    const [{ default: createModule }, { default: wasmUrl }] = await Promise.all([
+      import("@pgsql-parser/v17-module"),
+      import("@pgsql-parser/v17-wasm?url"),
+    ]);
+    return { createModule, wasmUrl };
+  },
+  18: async () => {
+    const [{ default: createModule }, { default: wasmUrl }] = await Promise.all([
+      import("@pgsql-parser/v18-module"),
+      import("@pgsql-parser/v18-wasm?url"),
+    ]);
+    return { createModule, wasmUrl };
+  },
+};
+
+const modulePromises = new Map<PostgresVersion, Promise<PgQueryWasmModule>>();
+
+async function loadModule(version: PostgresVersion) {
+  const { createModule, wasmUrl } = await assetLoaders[version]();
   const response = await fetch(wasmUrl);
   if (!response.ok) {
-    throw new Error(`Failed to load PostgreSQL parser WASM (${response.status})`);
+    throw new Error(`Failed to load PostgreSQL ${version} parser WASM (${response.status})`);
   }
 
-  // Passing the already-fetched binary prevents Emscripten from issuing a
-  // second request when a host serves .wasm with a generic MIME type.
   const wasmBinary = await response.arrayBuffer();
-  return PgQueryModule({
+  return createModule({
     wasmBinary,
-    locateFile(path: string) {
+    locateFile(path) {
       return path.endsWith(".wasm") ? wasmUrl : path;
     },
-  }) as Promise<PgQueryWasmModule>;
+  });
 }
 
-function getModule() {
-  modulePromise ??= loadModule();
+function getModule(version: PostgresVersion) {
+  let modulePromise = modulePromises.get(version);
+  if (!modulePromise) {
+    modulePromise = loadModule(version).catch((error) => {
+      modulePromises.delete(version);
+      throw error;
+    });
+    modulePromises.set(version, modulePromise);
+  }
   return modulePromise;
 }
 
-/** Start downloading and compiling the WASM module before the first query. */
-export async function initializeBrowserLibpgQuery(): Promise<void> {
-  await getModule();
+/** Start downloading and compiling the selected libpg_query WASM module. */
+export async function initializeBrowserLibpgQuery(version: PostgresVersion): Promise<void> {
+  await getModule(version);
 }
 
 function stringToPtr(wasm: PgQueryWasmModule, value: string) {
@@ -54,12 +100,12 @@ function stringToPtr(wasm: PgQueryWasmModule, value: string) {
   }
 }
 
-export async function parseSqlInBrowserWithWasmAsset(query: string) {
+export async function parseSqlInBrowserWithWasmAsset(query: string, version: PostgresVersion) {
   if (!query.trim()) {
-    return { version: 170004, stmts: [] };
+    return { version: version * 10_000, stmts: [] };
   }
 
-  const wasm = await getModule();
+  const wasm = await getModule(version);
   const queryPtr = stringToPtr(wasm, query);
   let resultPtr = 0;
 

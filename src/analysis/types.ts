@@ -1,3 +1,5 @@
+import type { PostgresVersion } from "@/src/parser/postgresVersion";
+
 export type Verdict =
   | "SAFE"
   | "NOT_SAFE"
@@ -14,6 +16,7 @@ export type TableSize = "empty" | "small" | "medium" | "large";
 export type MigrationContext = {
   tableSize?: TableSize;
   wrapsInTransaction?: boolean;
+  postgresVersion?: PostgresVersion;
 };
 
 export type ContextQuestion = {
@@ -50,6 +53,7 @@ export type Analysis = {
   question?: ContextQuestion;
   diagnostics: ParserDiagnostic[];
   parser: "libpg_query";
+  postgresVersion: PostgresVersion;
   statements: ParsedStatement[];
 };
 
@@ -96,6 +100,7 @@ export type ParsedMigration = {
   sql: string;
   statements: ParsedStatement[];
   parser: "libpg_query";
+  postgresVersion: PostgresVersion;
   diagnostics: ParserDiagnostic[];
 };
 

@@ -16,7 +16,7 @@
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },
   "dependencies": {
-    "@libpg-query/parser": "^17.6.10",
+    "@pgsql/parser": "1.5.0",
     "react": "19.2.6",
     "react-dom": "19.2.6"
   },

@@ -6,6 +6,7 @@ import { severityMeta, type VerdictMeta } from "@/src/ui/verdictMeta";
 import type { PanelTab } from "@/src/ui/types";
 import type { ParserState } from "@/src/parser/parserClient";
 import { AstBody, AstTypeName } from "@/src/components/editor/AstView";
+import type { PostgresVersion } from "@/src/parser/postgresVersion";
 
 const TABS: Array<{ key: PanelTab; label: string }> = [
   { key: "problems", label: "PROBLEMS" },
@@ -33,6 +34,7 @@ type TerminalPanelProps = {
   parserState: ParserState;
   activeName: string;
   charCount: number;
+  postgresVersion: PostgresVersion;
   onRetryParser: () => void;
 };
 
@@ -44,6 +46,7 @@ export function TerminalPanel({
   parserState,
   activeName,
   charCount,
+  postgresVersion,
   onRetryParser,
 }: TerminalPanelProps) {
   const findings = analysis.findings;
@@ -71,14 +74,15 @@ export function TerminalPanel({
 
   const matchedRuleCount = ruleRows.filter((row) => row.matched).length;
 
+  const parserName = `libpg_query ${postgresVersion} (wasm)`;
   const parseLabel =
     parserState === "ready"
-      ? "libpg_query 17 (wasm)"
+      ? parserName
       : parserState === "analyzing"
-        ? "libpg_query 17 (wasm) · analyzing"
+        ? `${parserName} · analyzing`
         : parserState === "initializing"
-          ? "libpg_query 17 (wasm) · initializing"
-          : "libpg_query 17 (wasm) · unavailable";
+          ? `${parserName} · initializing`
+          : `${parserName} · unavailable`;
 
   return (
     <div className="terminal-panel">

@@ -2,9 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { analyzeParsedMigration } from "../src/analysis/analyzeMigration";
 import { parseSqlWithLibpgQuery } from "../src/parser/parseWithLibpgQuery";
+import { DEFAULT_POSTGRES_VERSION } from "../src/parser/postgresVersion";
+import type { MigrationContext } from "../src/analysis/types";
 
-async function analyze(sql: string, context = {}) {
-  return analyzeParsedMigration(await parseSqlWithLibpgQuery(sql), context);
+async function analyze(sql: string, context: MigrationContext = {}) {
+  const version = context.postgresVersion ?? DEFAULT_POSTGRES_VERSION;
+  return analyzeParsedMigration(await parseSqlWithLibpgQuery(sql, version), context);
 }
 
 test("libpg_query keeps dollar-quoted function bodies as one statement", async () => {
@@ -18,7 +21,30 @@ test("libpg_query keeps dollar-quoted function bodies as one statement", async (
   `);
 
   assert.equal(parsed.parser, "libpg_query");
+  assert.equal(parsed.postgresVersion, 17);
   assert.equal(parsed.statements.length, 1);
+});
+
+test("selects exact PostgreSQL parser versions", async () => {
+  for (const version of [15, 16, 17, 18] as const) {
+    const parsed = await parseSqlWithLibpgQuery("SELECT 1;", version);
+    assert.equal(parsed.postgresVersion, version);
+    assert.equal(parsed.statements.length, 1);
+  }
+});
+
+test("PostgreSQL 18 syntax is rejected by the PostgreSQL 17 parser", async () => {
+  const virtualColumn =
+    "CREATE TABLE measurements (raw_value int, doubled int GENERATED ALWAYS AS (raw_value * 2) VIRTUAL);";
+
+  const parsed = await parseSqlWithLibpgQuery(virtualColumn, 18);
+  assert.equal(parsed.postgresVersion, 18);
+  assert.equal(parsed.statements.length, 1);
+
+  await assert.rejects(
+    () => parseSqlWithLibpgQuery(virtualColumn, 17),
+    /syntax error at or near "VIRTUAL"/,
+  );
 });
 
 test("regular create index is not safe, concurrent index is safe", async () => {
